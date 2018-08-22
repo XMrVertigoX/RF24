@@ -13,7 +13,7 @@
 namespace xXx {
 
 class RF24 : public RF24_BASE {
-   private:
+private:
     IGpio &ce;
     IGpio &irq;
     CircularBuffer<RF24_DataPackage_t> rxBuffer;
@@ -46,7 +46,7 @@ class RF24 : public RF24_BASE {
     RF24_Status readRxFifo(uint8_t status);
     RF24_Status writeTxFifo(uint8_t status);
 
-   public:
+public:
     RF24(ISpi &spi, IGpio &ce, IGpio &irq);
     ~RF24();
 
@@ -101,4 +101,4 @@ class RF24 : public RF24_BASE {
 
 } /* namespace xXx */
 
-#endif  // RF24_HPP
+#endif // RF24_HPP

@@ -9,12 +9,12 @@
 namespace xXx {
 
 class RF24_BASE {
-   private:
+private:
     ISpi &_spi;
 
     uint8_t transmit(uint8_t command, const uint8_t *txBytes, uint8_t *rxBytes, size_t numBytes);
 
-   protected:
+protected:
     RF24_BASE(ISpi &spi);
     virtual ~RF24_BASE();
 

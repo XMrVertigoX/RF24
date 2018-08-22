@@ -8,8 +8,7 @@ namespace xXx {
 
 class ISpi {
 public:
-  virtual uint8_t transmit_receive(uint8_t *txBytes, uint8_t *rxBytes,
-                                   size_t numBytes) = 0;
+    virtual uint8_t transmit_receive(uint8_t *txBytes, uint8_t *rxBytes, size_t numBytes) = 0;
 };
 
 } /* namespace xXx */

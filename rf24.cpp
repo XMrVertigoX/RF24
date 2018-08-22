@@ -15,8 +15,8 @@
     return (statement)
 
 static const uint8_t addressPrefixLength = 1;
-static const uint8_t baseAddressOffset = 1;
-static const uint8_t numPipes = 5;
+static const uint8_t baseAddressOffset   = 1;
+static const uint8_t numPipes            = 5;
 
 namespace xXx {
 
@@ -28,11 +28,8 @@ static inline uint8_t extractPipe(uint8_t status)
     return (status);
 }
 
-RF24::RF24(ISpi& spi, IGpio& ce, IGpio& irq)
-    : RF24_BASE(spi)
-    , ce(ce)
-    , irq(irq)
-    , rxBuffer(CircularBuffer<RF24_DataPackage_t>(6))
+RF24::RF24(ISpi &spi, IGpio &ce, IGpio &irq)
+    : RF24_BASE(spi), ce(ce), irq(irq), rxBuffer(CircularBuffer<RF24_DataPackage_t>(6))
 {
     LOG("%s: %p\n", __FUNCTION__, this);
 }
@@ -46,8 +43,8 @@ void RF24::setup()
 {
     uint8_t tmp;
 
-    IGpio_Callback_t interruptFunction = [](void* user) {
-        RF24* self = static_cast<RF24*>(user);
+    IGpio_Callback_t interruptFunction = [](void *user) {
+        RF24 *self = static_cast<RF24 *>(user);
         self->increaseNotificationCounter();
         // TODO: Read FIFO from here?
     };
@@ -219,12 +216,12 @@ void RF24::enterTxMode()
 
 RF24_Status RF24::startListening(uint8_t pipe,
     RF24_RxCallback_t callback,
-    void* user)
+    void *user)
 {
     __BOUNCE(pipe > numPipes, RF24_Status::UnknownPipe);
 
     rxCallback[pipe] = callback;
-    rxUser[pipe] = user;
+    rxUser[pipe]     = user;
 
     enableDynamicPayloadLength(pipe);
     enableAutoAcknowledgment(pipe);
@@ -238,7 +235,7 @@ RF24_Status RF24::stopListening(uint8_t pipe)
     __BOUNCE(pipe > numPipes, RF24_Status::UnknownPipe);
 
     rxCallback[pipe] = NULL;
-    rxUser[pipe] = NULL;
+    rxUser[pipe]     = NULL;
 
     enableDynamicPayloadLength(pipe, false);
     enableAutoAcknowledgment(pipe, false);
@@ -510,7 +507,7 @@ RF24_Status RF24::setRetryDelay(uint8_t delay)
     return (RF24_Status::Success);
 }
 
-RF24_Status RF24::readRxBaseAddress(uint8_t pipe, uint32_t& baseAddress)
+RF24_Status RF24::readRxBaseAddress(uint8_t pipe, uint32_t &baseAddress)
 {
     uint8_t baseAddressLength = addressLength - addressPrefixLength;
     uint8_t buffer[addressLength];
@@ -559,7 +556,7 @@ RF24_Status RF24::writeRxBaseAddress(uint8_t pipe, uint32_t baseAddress)
     return (RF24_Status::Success);
 }
 
-RF24_Status RF24::readTxBaseAddress(uint32_t& baseAddress)
+RF24_Status RF24::readTxBaseAddress(uint32_t &baseAddress)
 {
     uint8_t baseAddressLength = addressLength - addressPrefixLength;
     uint8_t addressBuffer[addressLength];
@@ -589,7 +586,7 @@ RF24_Status RF24::writeTxBaseAddress(uint32_t baseAddress)
     return (RF24_Status::Success);
 }
 
-RF24_Status RF24::readRxAddress(uint8_t pipe, uint8_t& address)
+RF24_Status RF24::readRxAddress(uint8_t pipe, uint8_t &address)
 {
     __BOUNCE(pipe > numPipes, RF24_Status::UnknownPipe);
 
@@ -652,7 +649,7 @@ RF24_Status RF24::writeRxAddress(uint8_t pipe, uint8_t address)
     return (RF24_Status::Success);
 }
 
-RF24_Status RF24::readTxAddress(uint8_t& address)
+RF24_Status RF24::readTxAddress(uint8_t &address)
 {
     R_REGISTER(RF24_Register::TX_ADDR, &address, addressPrefixLength);
 
