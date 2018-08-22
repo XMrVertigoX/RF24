@@ -1,8 +1,6 @@
 #ifndef IGPIO_HPP
 #define IGPIO_HPP
 
-namespace xXx {
-
 typedef void (*IGpio_Callback_t)(void *user);
 
 class IGpio {
@@ -17,7 +15,5 @@ public:
     virtual void disableInterrupt()                               = 0;
     virtual void enableInterrupt(IGpio_Callback_t cb, void *user) = 0;
 };
-
-} /* namespace xXx */
 
 #endif /* IGPIO_HPP */
