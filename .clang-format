@@ -1,12 +1,4 @@
 ---
-BasedOnStyle: WebKit
-
-AlignConsecutiveAssignments: true
+BreakBeforeBraces: Allman
 ColumnLimit: 0
-ConstructorInitializerAllOnOneLineOrOnePerLine: true
-DerivePointerAlignment: false
-PointerAlignment: Right
-ReflowComments: false
-SortIncludes: true
-UseTab: Never
----
+...
