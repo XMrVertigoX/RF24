@@ -1,15 +1,30 @@
+AR  := $(CROSS_COMPILE)ar
+CC  := $(CROSS_COMPILE)gcc
+CXX := $(CROSS_COMPILE)g++
+RM  := rm -rf
+
+SOURCE_FILES := $(shell find -type f -name *.cpp)
+OBJECT_FILES := $(patsubst %.cpp,%.o,$(wildcard src/*.cpp))
+DEPENDENCIES := $(patsubst %.cpp,%.d,$(wildcard src/*.cpp))
+OUTPUT_FILES := libnrf24l01.a
+
 CPPFLAGS += -Iinc
 CPPFLAGS += -MD
 
-SOURCE_FILES := $(wildcard src/*.cpp)
-OBJECT_FILES := $(patsubst %.cpp,%.o,$(wildcard src/*.cpp))
-DEPENDENCIES := $(patsubst %.cpp,%.d,$(wildcard src/*.cpp))
+# -----
 
-all: libnrf24l01.a
+.PHONY: all clean
+
+all: $(OUTPUT_FILES)
 
 clean:
-	rm -rf $(OBJECT_FILES) $(DEPENDENCIES)
+	$(RM) $(OUTPUT_FILES) $(OBJECT_FILES) $(DEPENDENCIES)
+
+# -----
 
 libnrf24l01.a: $(OBJECT_FILES)
+	@$(AR) r $@ $^
+
+# -----
 
 -include $(DEPENDENCIES)

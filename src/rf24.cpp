@@ -1,7 +1,7 @@
+#include <cstdint>
 #include <cstdio>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 #include <libnrf24l01/bitoperations.hpp>
 #include <libnrf24l01/igpio.hpp>
@@ -25,15 +25,9 @@ static inline uint8_t extractPipe(uint8_t status)
 }
 
 RF24::RF24(ISpi &spi, IGpio &ce, IGpio &irq)
-    : RF24_BASE(spi), ce(ce), irq(irq), rxBuffer(CircularBuffer<RF24_DataPackage_t>(6))
-{
-  printf("%s: %p\n", __func__, this);
-}
+    : RF24_BASE(spi), ce(ce), irq(irq), rxBuffer(CircularBuffer<RF24_DataPackage_t>(6)) {}
 
-RF24::~RF24()
-{
-  printf("%s: %p\n", __func__, this);
-}
+RF24::~RF24() {}
 
 void RF24::setup()
 {

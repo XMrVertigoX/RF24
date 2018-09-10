@@ -8,9 +8,8 @@ class IGpio
 public:
   /* General functionality */
   virtual void clear() = 0;
-  virtual bool get() = 0;
+  virtual int get() = 0;
   virtual void set() = 0;
-  virtual void toggle() = 0;
 
   /* Interrupt control */
   virtual void disableInterrupt() = 0;

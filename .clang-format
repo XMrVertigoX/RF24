@@ -1,4 +1,5 @@
 ---
 BreakBeforeBraces: Allman
 ColumnLimit: 0
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
 ...
