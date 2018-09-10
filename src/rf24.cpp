@@ -1,12 +1,12 @@
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-
 #include <libnrf24l01/bitoperations.hpp>
 #include <libnrf24l01/igpio.hpp>
 #include <libnrf24l01/ispi.hpp>
 #include <libnrf24l01/rf24.hpp>
+
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 #define BOUNCE(expression, statement) \
   if (expression)                     \
