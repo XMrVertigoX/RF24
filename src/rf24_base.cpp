@@ -1,11 +1,11 @@
-#include <cstdint>
-#include <cstring>
-#include <type_traits>
-
 #include <libnrf24l01/bitoperations.hpp>
 #include <libnrf24l01/ispi.hpp>
 #include <libnrf24l01/rf24_base.hpp>
 #include <libnrf24l01/rf24_types.hpp>
+
+#include <cstdint>
+#include <cstring>
+#include <type_traits>
 
 static const uint8_t dummy_byte = 0xFF;
 
