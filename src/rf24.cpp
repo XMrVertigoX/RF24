@@ -1,12 +1,14 @@
-#include <libnrf24l01/bitoperations.hpp>
-#include <libnrf24l01/igpio.hpp>
-#include <libnrf24l01/ispi.hpp>
-#include <libnrf24l01/rf24.hpp>
-
+#include <bitset>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+
+#include <libnrf24l01/igpio.hpp>
+#include <libnrf24l01/ispi.hpp>
+#include <libnrf24l01/rf24.hpp>
+
+using namespace std;
 
 #define BOUNCE(expression, statement) \
   if (expression)                     \
@@ -16,144 +18,117 @@ static const uint8_t addressPrefixLength = 1;
 static const uint8_t baseAddressOffset = 1;
 static const uint8_t numPipes = 5;
 
+static inline void clearBit(uint8_t& byte, uint8_t bit)
+{
+  byte and_eq compl((1 << bit));
+}
+
+static inline void setBit(uint8_t& byte, uint8_t bit)
+{
+  byte or_eq (1 << bit);
+}
+
+static inline bool isBitSet(uint8_t byte, uint8_t bit)
+{
+  return (byte bitand (1 << bit));
+}
+
 static inline uint8_t extractPipe(uint8_t status)
 {
-  AND_eq<uint8_t>(status, STATUS_RX_P_NO_MASK);
-  RIGHT_eq<uint8_t>(status, STATUS_RX_P_NO);
+  status and_eq STATUS_RX_P_NO_MASK;
+  status >> STATUS_RX_P_NO;
 
   return (status);
 }
 
-RF24::RF24(ISpi &spi, IGpio &ce, IGpio &irq)
-    : RF24_BASE(spi), ce(ce), irq(irq), rxBuffer(CircularBuffer<RF24_DataPackage_t>(6)) {}
+static inline void __attribute__((weak)) delayUs(int us) {}
+
+RF24::RF24(ISpi& spi, IGpio& ce)
+    : RF24_BASE(spi),
+      ce(ce) {}
 
 RF24::~RF24() {}
 
 void RF24::setup()
 {
-  uint8_t tmp;
-
-  IGpio_Callback_t interruptFunction = [](void *user) {
-    RF24 *self = static_cast<RF24 *>(user);
-    self->increaseNotificationCounter();
-    // TODO: Read FIFO from here?
-  };
-
   // Enable dynamic payload length only
-  R_REGISTER(RF24_Register::FEATURE, &tmp);
-  clearBit_eq<uint8_t>(tmp, FEATURE_EN_DYN_ACK);
-  clearBit_eq<uint8_t>(tmp, FEATURE_EN_ACK_PAY);
-  setBit_eq<uint8_t>(tmp, FEATURE_EN_DPL);
-  W_REGISTER(RF24_Register::FEATURE, &tmp);
+  uint8_t feature;
+  R_REGISTER(RF24_Register::FEATURE, &feature);
+  clearBit(feature, FEATURE_EN_DYN_ACK);
+  clearBit(feature, FEATURE_EN_ACK_PAY);
+  setBit(feature, FEATURE_EN_DPL);
+  W_REGISTER(RF24_Register::FEATURE, &feature);
 
   // Clear interrupts
-  R_REGISTER(RF24_Register::STATUS, &tmp);
-  setBit_eq<uint8_t>(tmp, STATUS_MAX_RT);
-  setBit_eq<uint8_t>(tmp, STATUS_RX_DR);
-  setBit_eq<uint8_t>(tmp, STATUS_TX_DS);
-  W_REGISTER(RF24_Register::STATUS, &tmp);
+  uint8_t status;
+  R_REGISTER(RF24_Register::STATUS, &status);
+  setBit(status, STATUS_MAX_RT);
+  setBit(status, STATUS_RX_DR);
+  setBit(status, STATUS_TX_DS);
+  W_REGISTER(RF24_Register::STATUS, &status);
 
-  FLUSH_TX();
   FLUSH_RX();
-
-  irq.enableInterrupt(interruptFunction, this);
+  FLUSH_TX();
 }
 
 void RF24::loop()
 {
   uint8_t status;
-
-  if (rxBuffer.itemsAvailable())
-  {
-    RF24_DataPackage_t package;
-    rxBuffer.pop(package);
-
-    if (rxCallback[package.pipe])
-    {
-      rxCallback[package.pipe](package, rxUser[package.pipe]);
-    }
-  }
-
-  if (!decreaseNotificationCounter())
-    return;
-
   R_REGISTER(RF24_Register::STATUS, &status);
-  if (readBit<uint8_t>(status, STATUS_MAX_RT))
-    handle_MAX_RT(status);
-  if (readBit<uint8_t>(status, STATUS_TX_DS))
-    handle_TX_DS(status);
-  if (readBit<uint8_t>(status, STATUS_RX_DR))
-    handle_RX_DR(status);
+
+  if (isBitSet(status, STATUS_TX_DS) || isBitSet(status, STATUS_MAX_RT))
+    handleDataSent(status);
+
+  if (isBitSet(status, STATUS_RX_DR))
+    handleDataReady(status);
+
   W_REGISTER(RF24_Register::STATUS, &status);
 }
 
-bool RF24::increaseNotificationCounter()
+void RF24::handleDataSent(uint8_t status)
 {
-  BOUNCE(notificationCounter == __UINT8_MAX__, false);
+  if (isBitSet(status, STATUS_MAX_RT))
+  {
+    FLUSH_TX();
+  }
 
-  notificationCounter++;
-
-  return (true);
+  if (txCallback)
+  {
+    txCallback(getRetransmissionCounter(), txContext);
+  }
 }
 
-bool RF24::decreaseNotificationCounter()
+void RF24::handleDataReady(uint8_t status)
 {
-  BOUNCE(notificationCounter == 0, false);
+  RF24_Datagram_t data;
+  uint8_t pipe = extractPipe(status);
+  int error = readRxFifo(data);
 
-  notificationCounter--;
-
-  return (true);
-}
-
-void RF24::handle_MAX_RT(uint8_t status)
-{
-  (void)status;
-
-  FLUSH_TX();
-}
-
-void RF24::handle_TX_DS(uint8_t status)
-{
-  (void)status;
-}
-
-void RF24::handle_RX_DR(uint8_t status)
-{
-  RF24_Status error = readRxFifo(status);
-  if (error != RF24_Status::Success)
+  if (error)
+  {
     FLUSH_RX();
+  }
+  else if (rxCallback)
+  {
+    rxCallback(pipe, data, rxContext);
+  }
 }
 
-RF24_Status RF24::readRxFifo(uint8_t status)
+int RF24::readRxFifo(RF24_Datagram_t& data)
 {
-  RF24_DataPackage_t package;
-  bool success;
+  R_RX_PL_WID(data.numBytes);
+  BOUNCE(data.numBytes > rxFifoSize, EXIT_FAILURE);
+  R_RX_PAYLOAD(data.bytes, data.numBytes);
 
-  package.pipe = extractPipe(status);
-  BOUNCE(package.pipe > numPipes, RF24_Status::Failure);
-
-  R_RX_PL_WID(package.numBytes);
-  BOUNCE(package.numBytes > rxFifoSize, RF24_Status::Failure);
-
-  R_RX_PAYLOAD(package.bytes, package.numBytes);
-
-  success = rxBuffer.push(package);
-  BOUNCE(!success, RF24_Status::Failure);
-
-  return (RF24_Status::Success);
+  return EXIT_SUCCESS;
 }
 
-RF24_Status RF24::writeTxFifo(uint8_t status)
+int RF24::writeTxFifo(RF24_Datagram_t& data)
 {
-  //    RF24_DataPackage_t package;
+  BOUNCE(isBitSet(NOP(), STATUS_TX_FULL), EXIT_FAILURE);
+  W_TX_PAYLOAD(data.bytes, data.numBytes);
 
-  BOUNCE(readBit<uint8_t>(status, STATUS_TX_FULL), RF24_Status::Failure);
-
-  // TODO: this->txQueue->dequeue(package);
-
-  //    W_TX_PAYLOAD(package.bytes, package.numBytes);
-
-  return (RF24_Status::Success);
+  return EXIT_SUCCESS;
 }
 
 void RF24::enterRxMode()
@@ -161,8 +136,8 @@ void RF24::enterRxMode()
   uint8_t config;
 
   R_REGISTER(RF24_Register::CONFIG, &config);
-  setBit_eq<uint8_t>(config, CONFIG_PWR_UP);
-  setBit_eq<uint8_t>(config, CONFIG_PRIM_RX);
+  setBit(config, CONFIG_PWR_UP);
+  setBit(config, CONFIG_PRIM_RX);
   W_REGISTER(RF24_Register::CONFIG, &config);
 
   ce.set();
@@ -177,7 +152,7 @@ void RF24::enterShutdownMode()
   ce.clear();
 
   R_REGISTER(RF24_Register::CONFIG, &config);
-  clearBit_eq<uint8_t>(config, CONFIG_PWR_UP);
+  clearBit(config, CONFIG_PWR_UP);
   W_REGISTER(RF24_Register::CONFIG, &config);
 }
 
@@ -188,7 +163,7 @@ void RF24::enterStandbyMode()
   ce.clear();
 
   R_REGISTER(RF24_Register::CONFIG, &config);
-  setBit_eq<uint8_t>(config, CONFIG_PWR_UP);
+  setBit(config, CONFIG_PWR_UP);
   W_REGISTER(RF24_Register::CONFIG, &config);
 }
 
@@ -197,8 +172,8 @@ void RF24::enterTxMode()
   uint8_t config;
 
   R_REGISTER(RF24_Register::CONFIG, &config);
-  setBit_eq<uint8_t>(config, CONFIG_PWR_UP);
-  clearBit_eq<uint8_t>(config, CONFIG_PRIM_RX);
+  setBit(config, CONFIG_PWR_UP);
+  clearBit(config, CONFIG_PRIM_RX);
   W_REGISTER(RF24_Register::CONFIG, &config);
 
   ce.set();
@@ -206,14 +181,9 @@ void RF24::enterTxMode()
   delayUs(txSettling);
 }
 
-RF24_Status RF24::startListening(uint8_t pipe,
-                                 RF24_RxCallback_t callback,
-                                 void *user)
+RF24_Status RF24::startListening(uint8_t pipe)
 {
   BOUNCE(pipe > numPipes, RF24_Status::UnknownPipe);
-
-  rxCallback[pipe] = callback;
-  rxUser[pipe] = user;
 
   enableDynamicPayloadLength(pipe);
   enableAutoAcknowledgment(pipe);
@@ -226,9 +196,6 @@ RF24_Status RF24::stopListening(uint8_t pipe)
 {
   BOUNCE(pipe > numPipes, RF24_Status::UnknownPipe);
 
-  rxCallback[pipe] = NULL;
-  rxUser[pipe] = NULL;
-
   enableDynamicPayloadLength(pipe, false);
   enableAutoAcknowledgment(pipe, false);
   enableDataPipe(pipe, false);
@@ -236,26 +203,26 @@ RF24_Status RF24::stopListening(uint8_t pipe)
   return (RF24_Status::Success);
 }
 
-uint8_t RF24::getPackageLossCounter()
+int RF24::getPackageLossCounter()
 {
   uint8_t observe_tx;
 
   R_REGISTER(RF24_Register::OBSERVE_TX, &observe_tx);
-  AND_eq<uint8_t>(observe_tx, OBSERVE_TX_PLOS_CNT_MASK);
-  RIGHT_eq<uint8_t>(observe_tx, OBSERVE_TX_PLOS_CNT);
+  observe_tx and_eq OBSERVE_TX_PLOS_CNT_MASK;
+  observe_tx >>= OBSERVE_TX_PLOS_CNT;
 
-  return (observe_tx);
+  return observe_tx;
 }
 
-uint8_t RF24::getRetransmissionCounter()
+int RF24::getRetransmissionCounter()
 {
   uint8_t observe_tx;
 
   R_REGISTER(RF24_Register::OBSERVE_TX, &observe_tx);
-  AND_eq<uint8_t>(observe_tx, OBSERVE_TX_ARC_CNT_MASK);
-  RIGHT_eq<uint8_t>(observe_tx, OBSERVE_TX_ARC_CNT);
+  observe_tx and_eq OBSERVE_TX_ARC_CNT_MASK;
+  observe_tx >>= OBSERVE_TX_ARC_CNT;
 
-  return (observe_tx);
+  return observe_tx;
 }
 
 RF24_Status RF24::enableDynamicPayloadLength(uint8_t pipe, bool enable)
@@ -268,11 +235,11 @@ RF24_Status RF24::enableDynamicPayloadLength(uint8_t pipe, bool enable)
 
   if (enable)
   {
-    setBit_eq<uint8_t>(dynpd, pipe);
+    setBit(dynpd, pipe);
   }
   else
   {
-    clearBit_eq<uint8_t>(dynpd, pipe);
+    clearBit(dynpd, pipe);
   }
 
   W_REGISTER(RF24_Register::DYNPD, &dynpd);
@@ -282,28 +249,28 @@ RF24_Status RF24::enableDynamicPayloadLength(uint8_t pipe, bool enable)
   return (RF24_Status::Success);
 }
 
-RF24_CRCConfig RF24::getCrcConfig()
+RF24_CRCConfig_t RF24::getCrcConfig()
 {
   uint8_t config;
 
   R_REGISTER(RF24_Register::CONFIG, &config);
 
-  if (readBit<uint8_t>(config, CONFIG_EN_CRC) == false)
+  if (isBitSet(config, CONFIG_EN_CRC) == false)
   {
-    return (RF24_CRCConfig::CRC_DISABLED);
+    return (RF24_CRCConfig_t::CRC_DISABLED);
   }
 
-  if (readBit<uint8_t>(config, CONFIG_CRCO))
+  if (isBitSet(config, CONFIG_CRCO))
   {
-    return (RF24_CRCConfig::CRC_2Bytes);
+    return (RF24_CRCConfig_t::CRC_2Bytes);
   }
   else
   {
-    return (RF24_CRCConfig::CRC_1Byte);
+    return (RF24_CRCConfig_t::CRC_1Byte);
   }
 }
 
-RF24_Status RF24::setCrcConfig(RF24_CRCConfig crcConfig)
+RF24_Status RF24::setCrcConfig(RF24_CRCConfig_t crcConfig)
 {
   uint8_t config;
 
@@ -311,21 +278,21 @@ RF24_Status RF24::setCrcConfig(RF24_CRCConfig crcConfig)
 
   switch (crcConfig)
   {
-  case RF24_CRCConfig::CRC_DISABLED:
+  case RF24_CRCConfig_t::CRC_DISABLED:
   {
-    clearBit_eq<uint8_t>(config, CONFIG_EN_CRC);
+    clearBit(config, CONFIG_EN_CRC);
   }
   break;
-  case RF24_CRCConfig::CRC_1Byte:
+  case RF24_CRCConfig_t::CRC_1Byte:
   {
-    setBit_eq<uint8_t>(config, CONFIG_EN_CRC);
-    clearBit_eq<uint8_t>(config, CONFIG_CRCO);
+    setBit(config, CONFIG_EN_CRC);
+    clearBit(config, CONFIG_CRCO);
   }
   break;
-  case RF24_CRCConfig::CRC_2Bytes:
+  case RF24_CRCConfig_t::CRC_2Bytes:
   {
-    setBit_eq<uint8_t>(config, CONFIG_EN_CRC);
-    setBit_eq<uint8_t>(config, CONFIG_CRCO);
+    setBit(config, CONFIG_EN_CRC);
+    setBit(config, CONFIG_CRCO);
   }
   break;
   }
@@ -359,26 +326,26 @@ RF24_Status RF24::setChannel(uint8_t channel)
   return (RF24_Status::Success);
 }
 
-RF24_DataRate RF24::getDataRate()
+RF24_DataRate_t RF24::getDataRate()
 {
   uint8_t rf_setup;
 
   R_REGISTER(RF24_Register::RF_SETUP, &rf_setup);
 
-  if (readBit<uint8_t>(rf_setup, RF_SETUP_RF_DR_LOW))
+  if (isBitSet(rf_setup, RF_SETUP_RF_DR_LOW))
   {
-    return (RF24_DataRate::DR_250KBPS);
+    return (RF24_DataRate_t::DR_250KBPS);
   }
 
-  if (readBit<uint8_t>(rf_setup, RF_SETUP_RF_DR_HIGH))
+  if (isBitSet(rf_setup, RF_SETUP_RF_DR_HIGH))
   {
-    return (RF24_DataRate::DR_2MBPS);
+    return (RF24_DataRate_t::DR_2MBPS);
   }
 
-  return (RF24_DataRate::DR_1MBPS);
+  return (RF24_DataRate_t::DR_1MBPS);
 }
 
-RF24_Status RF24::setDataRate(RF24_DataRate dataRate)
+RF24_Status RF24::setDataRate(RF24_DataRate_t dataRate)
 {
   uint8_t rf_setup;
 
@@ -386,22 +353,22 @@ RF24_Status RF24::setDataRate(RF24_DataRate dataRate)
 
   switch (dataRate)
   {
-  case RF24_DataRate::DR_1MBPS:
+  case RF24_DataRate_t::DR_1MBPS:
   {
-    clearBit_eq<uint8_t>(rf_setup, RF_SETUP_RF_DR_LOW);
-    clearBit_eq<uint8_t>(rf_setup, RF_SETUP_RF_DR_HIGH);
+    clearBit(rf_setup, RF_SETUP_RF_DR_LOW);
+    clearBit(rf_setup, RF_SETUP_RF_DR_HIGH);
   }
   break;
-  case RF24_DataRate::DR_2MBPS:
+  case RF24_DataRate_t::DR_2MBPS:
   {
-    clearBit_eq<uint8_t>(rf_setup, RF_SETUP_RF_DR_LOW);
-    setBit_eq<uint8_t>(rf_setup, RF_SETUP_RF_DR_HIGH);
+    clearBit(rf_setup, RF_SETUP_RF_DR_LOW);
+    setBit(rf_setup, RF_SETUP_RF_DR_HIGH);
   }
   break;
-  case RF24_DataRate::DR_250KBPS:
+  case RF24_DataRate_t::DR_250KBPS:
   {
-    setBit_eq<uint8_t>(rf_setup, RF_SETUP_RF_DR_LOW);
-    clearBit_eq<uint8_t>(rf_setup, RF_SETUP_RF_DR_HIGH);
+    setBit(rf_setup, RF_SETUP_RF_DR_LOW);
+    clearBit(rf_setup, RF_SETUP_RF_DR_HIGH);
   }
   break;
   }
@@ -413,60 +380,60 @@ RF24_Status RF24::setDataRate(RF24_DataRate dataRate)
   return (RF24_Status::Success);
 }
 
-RF24_OutputPower RF24::getOutputPower()
+RF24_OutputPower_t RF24::getOutputPower()
 {
   uint8_t rf_setup;
 
   R_REGISTER(RF24_Register::RF_SETUP, &rf_setup);
 
-  AND_eq<uint8_t>(rf_setup, RF_SETUP_RF_PWR_MASK);
-  RIGHT_eq<uint8_t>(rf_setup, RF_SETUP_RF_PWR);
+  rf_setup and_eq RF_SETUP_RF_PWR_MASK;
+  rf_setup >>= RF_SETUP_RF_PWR;
 
   switch (rf_setup)
   {
   case 0:
-    return (RF24_OutputPower::PWR_18dBm);
+    return (RF24_OutputPower_t::PWR_18dBm);
     break;
   case 1:
-    return (RF24_OutputPower::PWR_12dBm);
+    return (RF24_OutputPower_t::PWR_12dBm);
     break;
   case 2:
-    return (RF24_OutputPower::PWR_6dBm);
+    return (RF24_OutputPower_t::PWR_6dBm);
     break;
   default:
-    return (RF24_OutputPower::PWR_0dBm);
+    return (RF24_OutputPower_t::PWR_0dBm);
     break;
   }
 }
 
-RF24_Status RF24::setOutputPower(RF24_OutputPower outputPower)
+RF24_Status RF24::setOutputPower(RF24_OutputPower_t outputPower)
 {
   uint8_t rf_setup;
 
   R_REGISTER(RF24_Register::RF_SETUP, &rf_setup);
 
   // Default value
-  OR_eq<uint8_t>(rf_setup, RF_SETUP_RF_PWR_MASK);
+  rf_setup or_eq RF_SETUP_RF_PWR_MASK;
 
   switch (outputPower)
   {
-  case RF24_OutputPower::PWR_18dBm:
+  case RF24_OutputPower_t::PWR_18dBm:
   {
-    clearBit_eq<uint8_t>(rf_setup, 1);
-    clearBit_eq<uint8_t>(rf_setup, 2);
+    clearBit(rf_setup, 1);
+    clearBit(rf_setup, 2);
   }
   break;
-  case RF24_OutputPower::PWR_12dBm:
+  case RF24_OutputPower_t::PWR_12dBm:
   {
-    clearBit_eq<uint8_t>(rf_setup, 2);
+    clearBit(rf_setup, 2);
   }
   break;
-  case RF24_OutputPower::PWR_6dBm:
+  case RF24_OutputPower_t::PWR_6dBm:
   {
-    clearBit_eq<uint8_t>(rf_setup, 1);
+    clearBit(rf_setup, 1);
   }
   break;
-  case RF24_OutputPower::PWR_0dBm:
+  case RF24_OutputPower_t::PWR_0dBm:
   {
     // Default value
   }
@@ -485,8 +452,8 @@ uint8_t RF24::getRetryCount()
   uint8_t setup_retr;
 
   R_REGISTER(RF24_Register::SETUP_RETR, &setup_retr);
-  AND_eq<uint8_t>(setup_retr, SETUP_RETR_ARC_MASK);
-  RIGHT_eq<uint8_t>(setup_retr, SETUP_RETR_ARC);
+  setup_retr and_eq SETUP_RETR_ARC_MASK;
+  setup_retr >>= SETUP_RETR_ARC;
 
   return (setup_retr);
 }
@@ -498,7 +465,7 @@ RF24_Status RF24::setRetryCount(uint8_t count)
   BOUNCE(count > 0xF, RF24_Status::Failure);
 
   R_REGISTER(RF24_Register::SETUP_RETR, &setup_retr);
-  OR_eq<uint8_t>(setup_retr, LEFT<uint8_t>(count, SETUP_RETR_ARC));
+  setup_retr or_eq (count << SETUP_RETR_ARC);
   W_REGISTER(RF24_Register::SETUP_RETR, &setup_retr);
 
   BOUNCE(count != getRetryCount(), RF24_Status::VerificationFailed);
@@ -511,8 +478,8 @@ uint8_t RF24::getRetryDelay()
   uint8_t setup_retr;
 
   R_REGISTER(RF24_Register::SETUP_RETR, &setup_retr);
-  AND_eq<uint8_t>(setup_retr, SETUP_RETR_ARD_MASK);
-  RIGHT_eq<uint8_t>(setup_retr, SETUP_RETR_ARD);
+  setup_retr and_eq SETUP_RETR_ARD_MASK;
+  setup_retr >>= SETUP_RETR_ARD;
 
   return (setup_retr);
 }
@@ -524,7 +491,7 @@ RF24_Status RF24::setRetryDelay(uint8_t delay)
   BOUNCE(delay > 0xF, RF24_Status::Failure);
 
   R_REGISTER(RF24_Register::SETUP_RETR, &setup_retr);
-  OR_eq<uint8_t>(setup_retr, LEFT<uint8_t>(delay, SETUP_RETR_ARD));
+  setup_retr or_eq (delay << SETUP_RETR_ARD);
   W_REGISTER(RF24_Register::SETUP_RETR, &setup_retr);
 
   BOUNCE(delay != getRetryDelay(), RF24_Status::VerificationFailed);
@@ -532,7 +499,7 @@ RF24_Status RF24::setRetryDelay(uint8_t delay)
   return (RF24_Status::Success);
 }
 
-RF24_Status RF24::readRxBaseAddress(uint8_t pipe, uint32_t &baseAddress)
+RF24_Status RF24::readRxBaseAddress(uint8_t pipe, uint32_t& baseAddress)
 {
   uint8_t baseAddressLength = addressLength - addressPrefixLength;
   uint8_t buffer[addressLength];
@@ -590,7 +557,7 @@ RF24_Status RF24::writeRxBaseAddress(uint8_t pipe, uint32_t baseAddress)
   return (RF24_Status::Success);
 }
 
-RF24_Status RF24::readTxBaseAddress(uint32_t &baseAddress)
+RF24_Status RF24::readTxBaseAddress(uint32_t& baseAddress)
 {
   uint8_t baseAddressLength = addressLength - addressPrefixLength;
   uint8_t addressBuffer[addressLength];
@@ -620,7 +587,7 @@ RF24_Status RF24::writeTxBaseAddress(uint32_t baseAddress)
   return (RF24_Status::Success);
 }
 
-RF24_Status RF24::readRxAddress(uint8_t pipe, uint8_t &address)
+RF24_Status RF24::readRxAddress(uint8_t pipe, uint8_t& address)
 {
   BOUNCE(pipe > numPipes, RF24_Status::UnknownPipe);
 
@@ -685,7 +652,7 @@ RF24_Status RF24::writeRxAddress(uint8_t pipe, uint8_t address)
   return (RF24_Status::Success);
 }
 
-RF24_Status RF24::readTxAddress(uint8_t &address)
+RF24_Status RF24::readTxAddress(uint8_t& address)
 {
   R_REGISTER(RF24_Register::TX_ADDR, &address, addressPrefixLength);
 
@@ -716,17 +683,17 @@ RF24_Status RF24::enableAutoAcknowledgment(uint8_t pipe, bool enable)
 
   if (enable)
   {
-    setBit_eq<uint8_t>(en_aa, pipe);
+    setBit(en_aa, pipe);
   }
   else
   {
-    clearBit_eq<uint8_t>(en_aa, pipe);
+    clearBit(en_aa, pipe);
   }
 
   W_REGISTER(RF24_Register::EN_AA, &en_aa);
 
   R_REGISTER(RF24_Register::EN_AA, &en_aa);
-  BOUNCE(readBit<uint8_t>(en_aa, pipe), RF24_Status::VerificationFailed);
+  BOUNCE(isBitSet(en_aa, pipe), RF24_Status::VerificationFailed);
 
   return (RF24_Status::Success);
 }
@@ -741,17 +708,29 @@ RF24_Status RF24::enableDataPipe(uint8_t pipe, bool enable)
 
   if (enable)
   {
-    setBit_eq<uint8_t>(en_rxaddr, pipe);
+    setBit(en_rxaddr, pipe);
   }
   else
   {
-    clearBit_eq<uint8_t>(en_rxaddr, pipe);
+    clearBit(en_rxaddr, pipe);
   }
 
   W_REGISTER(RF24_Register::EN_RXADDR, &en_rxaddr);
 
   R_REGISTER(RF24_Register::EN_AA, &en_rxaddr);
-  BOUNCE(readBit<uint8_t>(en_rxaddr, pipe), RF24_Status::VerificationFailed);
+  BOUNCE(isBitSet(en_rxaddr, pipe), RF24_Status::VerificationFailed);
 
   return (RF24_Status::Success);
+}
+
+void RF24::setRxCallback(RF24_RxCallback_t callback, void* context)
+{
+  rxCallback = callback;
+  rxContext = context;
+}
+
+void RF24::setTxCallback(RF24_TxCallback_t callback, void* context)
+{
+  txCallback = callback;
+  txContext = context;
 }

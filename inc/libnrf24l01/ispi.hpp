@@ -1,13 +1,12 @@
-#ifndef ISPI_HPP
-#define ISPI_HPP
+#ifndef __ISPI_HPP
+#define __ISPI_HPP
 
-#include <stddef.h>
-#include <stdint.h>
+#include <cstdint>
 
 class ISpi
 {
 public:
-  virtual uint8_t transmit_receive(uint8_t *txBytes, uint8_t *rxBytes, size_t numBytes) = 0;
+  virtual uint8_t transmit_receive(const uint8_t *txBytes, uint8_t *rxBytes, uint32_t numBytes) = 0;
 };
 
-#endif /* ISPI_HPP */
+#endif /* __ISPI_HPP */

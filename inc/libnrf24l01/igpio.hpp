@@ -1,19 +1,11 @@
-#ifndef IGPIO_HPP
-#define IGPIO_HPP
-
-typedef void (*IGpio_Callback_t)(void *user);
+#ifndef __IGPIO_HPP
+#define __IGPIO_HPP
 
 class IGpio
 {
 public:
-  /* General functionality */
   virtual void clear() = 0;
-  virtual int get() = 0;
-  virtual void set() = 0;
-
-  /* Interrupt control */
-  virtual void disableInterrupt() = 0;
-  virtual void enableInterrupt(IGpio_Callback_t cb, void *user) = 0;
+  virtual void set(bool enable = true) = 0;
 };
 
-#endif /* IGPIO_HPP */
+#endif /* __IGPIO_HPP */

@@ -1,54 +1,21 @@
 #ifndef RF24_HPP
 #define RF24_HPP
 
-#include <stdint.h>
+#include <cstdint>
 
 #include <libnrf24l01/circularbuffer.hpp>
 #include <libnrf24l01/igpio.hpp>
 #include <libnrf24l01/ispi.hpp>
 #include <libnrf24l01/rf24_base.hpp>
-#include <libnrf24l01/rf24_types.hpp>
+#include <libnrf24l01/types.hpp>
 
 static inline void delayUs(uint32_t us) {}
 
 class RF24 : public RF24_BASE
 {
-private:
-  IGpio &ce;
-  IGpio &irq;
-  CircularBuffer<RF24_DataPackage_t> rxBuffer;
-
-  uint8_t notificationCounter = 0;
-  uint8_t addressLength = 5;
-
-  RF24_RxCallback_t rxCallback[6] = {};
-  void *rxUser[6] = {};
-
-  // Copy constructor
-  RF24(const RF24 &other) = default;
-
-  // Move constructor
-  RF24(RF24 &&other) = default;
-
-  // Copy assignment operator
-  RF24 &operator=(const RF24 &other) = default;
-
-  // Move assignment operator
-  RF24 &operator=(RF24 &&other) = default;
-
-  bool increaseNotificationCounter();
-  bool decreaseNotificationCounter();
-
-  void handle_MAX_RT(uint8_t status);
-  void handle_RX_DR(uint8_t status);
-  void handle_TX_DS(uint8_t status);
-
-  RF24_Status readRxFifo(uint8_t status);
-  RF24_Status writeTxFifo(uint8_t status);
-
 public:
-  RF24(ISpi &spi, IGpio &ce, IGpio &irq);
-  ~RF24();
+  RF24(ISpi& spi, IGpio& ce);
+  virtual ~RF24();
 
   void setup();
   void loop();
@@ -58,45 +25,65 @@ public:
   void enterStandbyMode();
   void enterTxMode();
 
-  RF24_Status startListening(uint8_t pipe, RF24_RxCallback_t callback = NULL, void *user = NULL);
+  void setRxCallback(RF24_RxCallback_t callback, void* context);
+  void setTxCallback(RF24_TxCallback_t callback, void* context);
+
+  RF24_Status startListening(uint8_t pipe);
   RF24_Status stopListening(uint8_t pipe);
 
   RF24_Status enableDynamicPayloadLength(uint8_t pipe, bool enable = true);
   RF24_Status enableDataPipe(uint8_t pipe, bool enable = true);
   RF24_Status enableAutoAcknowledgment(uint8_t pipe, bool enable = true);
 
-  uint8_t getRetransmissionCounter();
-  uint8_t getPackageLossCounter();
-
-  RF24_Status readRxBaseAddress(uint8_t pipe, uint32_t &baseAddress);
+  RF24_Status readRxBaseAddress(uint8_t pipe, uint32_t& baseAddress);
   RF24_Status writeRxBaseAddress(uint8_t pipe, uint32_t baseAddress);
 
-  RF24_Status readTxBaseAddress(uint32_t &baseAddress);
+  RF24_Status readTxBaseAddress(uint32_t& baseAddress);
   RF24_Status writeTxBaseAddress(uint32_t baseAddress);
 
-  RF24_Status readRxAddress(uint8_t pipe, uint8_t &address);
+  RF24_Status readRxAddress(uint8_t pipe, uint8_t& address);
   RF24_Status writeRxAddress(uint8_t pipe, uint8_t address);
 
-  RF24_Status readTxAddress(uint8_t &address);
+  RF24_Status readTxAddress(uint8_t& address);
   RF24_Status writeTxAddress(uint8_t address);
 
   uint8_t getChannel();
   RF24_Status setChannel(uint8_t channel);
 
-  RF24_CRCConfig getCrcConfig();
-  RF24_Status setCrcConfig(RF24_CRCConfig crcConfig);
+  RF24_CRCConfig_t getCrcConfig();
+  RF24_Status setCrcConfig(RF24_CRCConfig_t crcConfig);
 
-  RF24_DataRate getDataRate();
-  RF24_Status setDataRate(RF24_DataRate dataRate);
+  RF24_DataRate_t getDataRate();
+  RF24_Status setDataRate(RF24_DataRate_t dataRate);
 
-  RF24_OutputPower getOutputPower();
-  RF24_Status setOutputPower(RF24_OutputPower level);
+  RF24_OutputPower_t getOutputPower();
+  RF24_Status setOutputPower(RF24_OutputPower_t level);
 
   uint8_t getRetryCount();
   RF24_Status setRetryCount(uint8_t count);
 
   uint8_t getRetryDelay();
   RF24_Status setRetryDelay(uint8_t delay);
+
+private:
+  IGpio& ce;
+
+  RF24_RxCallback_t rxCallback = NULL;
+  void* rxContext = NULL;
+
+  RF24_TxCallback_t txCallback = NULL;
+  void* txContext = NULL;
+
+  int addressLength = 5;
+
+  void handleDataReady(uint8_t status);
+  void handleDataSent(uint8_t status);
+
+  int readRxFifo(RF24_Datagram_t& data);
+  int writeTxFifo(RF24_Datagram_t& data);
+
+  int getRetransmissionCounter();
+  int getPackageLossCounter();
 };
 
 #endif // RF24_HPP

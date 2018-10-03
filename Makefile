@@ -9,9 +9,9 @@ SOURCE_FILES := $(wildcard src/*.cpp)
 OBJECT_FILES := $(patsubst %.cpp,%.o,$(SOURCE_FILES))
 DEPENDENCIES := $(patsubst %.cpp,%.d,$(SOURCE_FILES))
 
-CFLAGS += -O3 -flto
+CFLAGS += -std=gnu11 #-O3 -flto
 
-CXXFLAGS += -O3 -flto
+CXXFLAGS += -std=gnu++17 #-O3 -flto
 
 CPPFLAGS += $(addprefix -I,$(INCLUDE_DIRS)) -MD
 

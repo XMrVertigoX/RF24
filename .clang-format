@@ -2,4 +2,6 @@
 BreakBeforeBraces: Allman
 ColumnLimit: 0
 ConstructorInitializerAllOnOneLineOrOnePerLine: true
+DerivePointerAlignment: false
+PointerAlignment: Left
 ...
