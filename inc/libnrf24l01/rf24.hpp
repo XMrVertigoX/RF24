@@ -6,12 +6,14 @@
 #include <libnrf24l01/circularbuffer.hpp>
 #include <libnrf24l01/igpio.hpp>
 #include <libnrf24l01/ispi.hpp>
-#include <libnrf24l01/rf24_base.hpp>
+#include <libnrf24l01/rf24_ll.hpp>
 #include <libnrf24l01/types.hpp>
+
+// using namespace std;
 
 static inline void delayUs(uint32_t us) {}
 
-class RF24 : public RF24_BASE
+class RF24 : public RF24_LL
 {
 public:
   RF24(ISpi& spi, IGpio& ce);
@@ -28,8 +30,10 @@ public:
   void setRxCallback(RF24_RxCallback_t callback, void* context);
   void setTxCallback(RF24_TxCallback_t callback, void* context);
 
-  RF24_Status startListening(uint8_t pipe);
-  RF24_Status stopListening(uint8_t pipe);
+  RF24_Status startListening(uint8_t pipe = 0);
+  RF24_Status stopListening(uint8_t pipe = 0);
+
+  bool enqueueData(RF24_Datagram_t& data);
 
   RF24_Status enableDynamicPayloadLength(uint8_t pipe, bool enable = true);
   RF24_Status enableDataPipe(uint8_t pipe, bool enable = true);
@@ -76,7 +80,11 @@ private:
 
   int addressLength = 5;
 
-  void handleDataReady(uint8_t status);
+  CircularBuffer<RF24_Datagram_t> rxBuffer = CircularBuffer<RF24_Datagram_t>(3);
+  CircularBuffer<RF24_Datagram_t> txBuffer = CircularBuffer<RF24_Datagram_t>(3);
+
+  void
+  handleDataReady(uint8_t status);
   void handleDataSent(uint8_t status);
 
   int readRxFifo(RF24_Datagram_t& data);

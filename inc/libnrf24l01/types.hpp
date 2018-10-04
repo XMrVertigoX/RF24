@@ -12,10 +12,11 @@ struct RF24_Datagram_t
 {
   uint8_t bytes[32];
   uint8_t numBytes;
+  uint8_t pipe;
 };
 
-typedef void (*RF24_TxCallback_t)(uint8_t retransmissionCounter, void* context);
-typedef void (*RF24_RxCallback_t)(uint8_t pipe, RF24_Datagram_t data, void* context);
+typedef void (*RF24_RxCallback_t)(RF24_Datagram_t data, void* context);
+typedef void (*RF24_TxCallback_t)(void* context);
 
 enum class RF24_DataRate_t
 {

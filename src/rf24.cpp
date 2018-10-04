@@ -1,4 +1,3 @@
-#include <bitset>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -43,9 +42,7 @@ static inline uint8_t extractPipe(uint8_t status)
 
 static inline void __attribute__((weak)) delayUs(int us) {}
 
-RF24::RF24(ISpi& spi, IGpio& ce)
-    : RF24_BASE(spi),
-      ce(ce) {}
+RF24::RF24(ISpi& spi, IGpio& ce) : RF24_LL(spi), ce(ce) {}
 
 RF24::~RF24() {}
 
@@ -73,16 +70,37 @@ void RF24::setup()
 
 void RF24::loop()
 {
-  uint8_t status;
-  R_REGISTER(RF24_Register::STATUS, &status);
-
-  if (isBitSet(status, STATUS_TX_DS) || isBitSet(status, STATUS_MAX_RT))
-    handleDataSent(status);
+  uint8_t status = NOP(); // equal to R_REGISTER(RF24_Register::STATUS, &status);
 
   if (isBitSet(status, STATUS_RX_DR))
     handleDataReady(status);
 
+  if (isBitSet(status, STATUS_TX_DS) || isBitSet(status, STATUS_MAX_RT))
+    handleDataSent(status);
+
   W_REGISTER(RF24_Register::STATUS, &status);
+
+  if (!rxBuffer.empty())
+  {
+    if (rxCallback)
+    {
+      rxCallback(rxBuffer.front(), rxContext);
+    }
+
+    rxBuffer.pop_front();
+  }
+
+  while (!txBuffer.empty())
+  {
+    if (writeTxFifo(txBuffer.front()))
+    {
+      break;
+    }
+    else
+    {
+      txBuffer.pop_front();
+    }
+  }
 }
 
 void RF24::handleDataSent(uint8_t status)
@@ -94,23 +112,23 @@ void RF24::handleDataSent(uint8_t status)
 
   if (txCallback)
   {
-    txCallback(getRetransmissionCounter(), txContext);
+    txCallback(txContext);
   }
 }
 
 void RF24::handleDataReady(uint8_t status)
 {
   RF24_Datagram_t data;
-  uint8_t pipe = extractPipe(status);
+  data.pipe = extractPipe(status);
   int error = readRxFifo(data);
 
   if (error)
   {
     FLUSH_RX();
   }
-  else if (rxCallback)
+  else
   {
-    rxCallback(pipe, data, rxContext);
+    rxBuffer.push_back(data);
   }
 }
 
@@ -201,6 +219,11 @@ RF24_Status RF24::stopListening(uint8_t pipe)
   enableDataPipe(pipe, false);
 
   return (RF24_Status::Success);
+}
+
+bool RF24::enqueueData(RF24_Datagram_t& data)
+{
+  return txBuffer.push_back(data);
 }
 
 int RF24::getPackageLossCounter()
