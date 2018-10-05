@@ -73,6 +73,7 @@ bool CircularBuffer<TYPE>::pop_front()
     return (false);
   }
 
+  // TODO: Clear element
   // elements[head] = nullptr;
 
   head = (head + 1) % maxElements;
@@ -84,6 +85,7 @@ bool CircularBuffer<TYPE>::pop_front()
 template <typename TYPE>
 TYPE& CircularBuffer<TYPE>::front()
 {
+  // TODO: What if buffer is empty?
   return elements[head];
 }
 

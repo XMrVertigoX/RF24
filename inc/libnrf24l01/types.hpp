@@ -3,10 +3,10 @@
 
 #include <cstdint>
 
-#define txFifoSize (32)
-#define rxFifoSize (32)
-#define txSettling (130)
-#define rxSettling (130)
+#define txFifoSize 32
+#define rxFifoSize 32
+#define txSettling 130
+#define rxSettling 130
 
 struct RF24_Datagram_t
 {
