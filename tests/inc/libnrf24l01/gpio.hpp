@@ -1,7 +1,7 @@
 #ifndef __NRF24L01_GPIO_HPP__
 #define __NRF24L01_GPIO_HPP__
 
-#include <nrf24l01/igpio.hpp>
+#include <libnrf24l01/igpio.hpp>
 
 class Gpio : public IGpio
 {

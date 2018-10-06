@@ -2,9 +2,9 @@
 #include <cstring>
 #include <type_traits>
 
-#include <nrf24l01/ispi.hpp>
-#include <nrf24l01/rf24_ll.hpp>
-#include <nrf24l01/types.hpp>
+#include <libnrf24l01/ispi.hpp>
+#include <libnrf24l01/rf24_ll.hpp>
+#include <libnrf24l01/types.hpp>
 
 using namespace std;
 

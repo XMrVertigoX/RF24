@@ -3,8 +3,8 @@
 
 #include <vector>
 
-#include <nrf24l01/igpio.hpp>
-#include <nrf24l01/ispi.hpp>
+#include <libnrf24l01/igpio.hpp>
+#include <libnrf24l01/ispi.hpp>
 
 using namespace std;
 

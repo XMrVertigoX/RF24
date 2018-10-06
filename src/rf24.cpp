@@ -3,9 +3,9 @@
 #include <cstdlib>
 #include <cstring>
 
-#include <nrf24l01/igpio.hpp>
-#include <nrf24l01/ispi.hpp>
-#include <nrf24l01/rf24.hpp>
+#include <libnrf24l01/igpio.hpp>
+#include <libnrf24l01/ispi.hpp>
+#include <libnrf24l01/rf24.hpp>
 
 using namespace std;
 

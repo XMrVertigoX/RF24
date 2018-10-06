@@ -3,8 +3,8 @@
 
 #include <cstdint>
 
-#include <nrf24l01/ispi.hpp>
-#include <nrf24l01/types.hpp>
+#include <libnrf24l01/ispi.hpp>
+#include <libnrf24l01/types.hpp>
 
 class RF24_LL
 {
