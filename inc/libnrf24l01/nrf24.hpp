@@ -1,23 +1,24 @@
-#ifndef RF24_HPP
-#define RF24_HPP
+#ifndef nRF24_HPP
+#define nRF24_HPP
 
 #include <cstdint>
 
 #include <libnrf24l01/circularbuffer.hpp>
 #include <libnrf24l01/igpio.hpp>
 #include <libnrf24l01/ispi.hpp>
-#include <libnrf24l01/rf24_ll.hpp>
+#include <libnrf24l01/nrf24_ll.hpp>
 #include <libnrf24l01/types.hpp>
 
-// using namespace std;
+using namespace std;
 
 static inline void delayUs(uint32_t us) {}
 
-class RF24 : public RF24_LL
+class nRF24 : private nRF24_LL
 {
 public:
-  RF24(ISpi& spi, IGpio& ce);
-  virtual ~RF24();
+  virtual ~nRF24() = default;
+
+  nRF24(ISpi& spi, IGpio& ce);
 
   void setup();
   void loop();
@@ -27,13 +28,13 @@ public:
   void enterStandbyMode();
   void enterTxMode();
 
-  void setRxCallback(RF24_RxCallback_t callback, void* context);
-  void setTxCallback(RF24_TxCallback_t callback, void* context);
+  void setRxCallback(nRF24_RxCallback_t callback, void* context);
+  void setTxCallback(nRF24_TxCallback_t callback, void* context);
 
   void startListening(uint8_t pipe = 0);
   void stopListening(uint8_t pipe = 0);
 
-  bool enqueueData(RF24_Datagram_t& data);
+  bool enqueueData(nRF24_Datagram_t& data);
 
   void enableDynamicPayloadLength(uint8_t pipe, bool enable = true);
   void enableDataPipe(uint8_t pipe, bool enable = true);
@@ -56,46 +57,46 @@ public:
   uint8_t getChannel();
   void setChannel(uint8_t channel);
 
-  RF24_CRCConfig_t getCrcConfig();
-  void setCrcConfig(RF24_CRCConfig_t crcConfig);
-
-  RF24_DataRate_t getDataRate();
-  void setDataRate(RF24_DataRate_t dataRate);
-
-  RF24_OutputPower_t getOutputPower();
-  void setOutputPower(RF24_OutputPower_t level);
-
   uint8_t getRetryCount();
   void setRetryCount(uint8_t count);
 
   uint8_t getRetryDelay();
   void setRetryDelay(uint8_t delay);
 
+  nRF24_CRCConfig_t getCrcConfig();
+  void setCrcConfig(nRF24_CRCConfig_t crcConfig);
+
+  nRF24_DataRate_t getDataRate();
+  void setDataRate(nRF24_DataRate_t dataRate);
+
+  nRF24_OutputPower_t getOutputPower();
+  void setOutputPower(nRF24_OutputPower_t level);
+
 private:
   IGpio& _ce;
 
-  RF24_RxCallback_t rxCallback = NULL;
+  nRF24_RxCallback_t rxCallback = NULL;
   void* rxContext = NULL;
 
-  RF24_TxCallback_t txCallback = NULL;
+  nRF24_TxCallback_t txCallback = NULL;
   void* txContext = NULL;
 
   int addressLength = 5;
 
-  CircularBuffer<RF24_Datagram_t> rxBuffer = CircularBuffer<RF24_Datagram_t>(1);
-  CircularBuffer<RF24_Datagram_t> txBuffer = CircularBuffer<RF24_Datagram_t>(1);
+  CircularBuffer<nRF24_Datagram_t> rxBuffer = CircularBuffer<nRF24_Datagram_t>(3);
+  CircularBuffer<nRF24_Datagram_t> txBuffer = CircularBuffer<nRF24_Datagram_t>(3);
 
-  uint8_t readShort(RF24_Register reg);
-  void writeShort(RF24_Register reg, uint8_t val);
+  uint8_t readShort(nRF24_Register reg);
+  void writeShort(nRF24_Register reg, uint8_t val);
 
   void handleDataReady(uint8_t status);
   void handleDataSent(uint8_t status);
   void handleMaxRetransmission(uint8_t status);
 
-  int readRxFifo(RF24_Datagram_t& data);
-  int writeTxFifo(RF24_Datagram_t& data);
+  int readRxFifo(nRF24_Datagram_t& data);
+  int writeTxFifo(nRF24_Datagram_t& data);
 
   int getPackageLossCounter();
 };
 
-#endif // RF24_HPP
+#endif // nRF24_HPP

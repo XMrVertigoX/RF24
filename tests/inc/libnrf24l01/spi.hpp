@@ -1,5 +1,5 @@
-#ifndef __NRF24L01_SPI_HPP__
-#define __NRF24L01_SPI_HPP__
+#ifndef __NnRF24L01_SPI_HPP__
+#define __NnRF24L01_SPI_HPP__
 
 #include <vector>
 
@@ -17,4 +17,4 @@ public:
   virtual uint8_t transmit_receive(const uint8_t txBytes[], uint8_t rxBytes[], uint32_t numBytes) = 0;
 };
 
-#endif /* __NRF24L01_SPI_HPP__ */
+#endif /* __NnRF24L01_SPI_HPP__ */

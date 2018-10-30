@@ -1,5 +1,5 @@
-#ifndef __NRF24L01_GPIO_HPP__
-#define __NRF24L01_GPIO_HPP__
+#ifndef __NnRF24L01_GPIO_HPP__
+#define __NnRF24L01_GPIO_HPP__
 
 #include <libnrf24l01/igpio.hpp>
 
@@ -18,4 +18,4 @@ private:
   bool _state;
 };
 
-#endif /* __NRF24L01_GPIO_HPP__ */
+#endif /* __NnRF24L01_GPIO_HPP__ */

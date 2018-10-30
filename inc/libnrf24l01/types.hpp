@@ -1,5 +1,5 @@
-#ifndef RF24_TYPES_HPP
-#define RF24_TYPES_HPP
+#ifndef nRF24_TYPES_HPP
+#define nRF24_TYPES_HPP
 
 #include <cstdint>
 
@@ -8,31 +8,31 @@
 #define txSettling 130
 #define rxSettling 130
 
-struct RF24_Datagram_t
+struct nRF24_Datagram_t
 {
   uint8_t bytes[32];
   uint8_t numBytes;
   uint8_t pipe;
 };
 
-typedef void (*RF24_RxCallback_t)(RF24_Datagram_t data, void* context);
-typedef void (*RF24_TxCallback_t)(void* context);
+typedef void (*nRF24_RxCallback_t)(nRF24_Datagram_t data, void* context);
+typedef void (*nRF24_TxCallback_t)(void* context);
 
-enum class RF24_DataRate_t
+enum class nRF24_DataRate_t : uint8_t
 {
   DR_250KBPS,
   DR_1MBPS,
   DR_2MBPS
 };
 
-enum class RF24_CRCConfig_t
+enum class nRF24_CRCConfig_t : uint8_t
 {
   CRC_DISABLED,
   CRC_1Byte,
   CRC_2Bytes
 };
 
-enum class RF24_OutputPower_t
+enum class nRF24_OutputPower_t : uint8_t
 {
   PWR_18dBm,
   PWR_12dBm,
@@ -40,16 +40,7 @@ enum class RF24_OutputPower_t
   PWR_0dBm
 };
 
-enum class RF24_Status
-{
-  Success,
-  Failure,
-  UnknownPipe,
-  UnknownChannel,
-  VerificationFailed
-};
-
-enum class RF24_Command
+enum class nRF24_Command : uint8_t
 {
   R_REGISTER = 0b00000000,
   W_REGISTER = 0b00100000,
@@ -64,7 +55,7 @@ enum class RF24_Command
   NOP = 0b11111111
 };
 
-enum class RF24_Register
+enum class nRF24_Register : uint8_t
 {
   CONFIG = 0x00,
   EN_AA = 0x01,
@@ -188,4 +179,4 @@ enum FEATURE
   FEATURE_EN_DPL_MASK = 0b00000100
 };
 
-#endif // RF24_TYPES_HPP
+#endif // nRF24_TYPES_HPP

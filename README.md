@@ -1,10 +1,10 @@
 # rf24
 
-## class RF24_BASE
+## class nRF24_BASE
 
 
 
-## class RF24 : public RF24_BASE
+## class nRF24 : public nRF24_BASE
 ### private
 ### public
 
