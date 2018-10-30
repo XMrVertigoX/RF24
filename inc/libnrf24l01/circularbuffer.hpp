@@ -10,31 +10,31 @@ class CircularBuffer
 private:
   TYPE* elements = NULL;
 
-  size_t maxElements;
-  size_t numElements;
-  size_t head;
-  size_t tail;
+  int maxElements;
+  int numElements;
+  int head;
+  int tail;
 
-  CircularBuffer(const CircularBuffer& other);            // Copy constructor
-  CircularBuffer& operator=(const CircularBuffer& other); // Copy assignment operator
-  CircularBuffer(CircularBuffer&& other);                 // Move constructor
-  CircularBuffer& operator=(CircularBuffer&& other);      // Move assignment operator
+  CircularBuffer(const CircularBuffer& other) = delete;            // Copy constructor
+  CircularBuffer& operator=(const CircularBuffer& other) = delete; // Copy assignment operator
+  CircularBuffer(CircularBuffer&& other) = delete;                 // Move constructor
+  CircularBuffer& operator=(CircularBuffer&& other) = delete;      // Move assignment operator
 
 public:
-  CircularBuffer(size_t size);
+  CircularBuffer(int size);
   ~CircularBuffer();
 
-  bool push_back(const TYPE& element);
-  bool pop_front();
+  int push_back(const TYPE& element);
+  int pop_front();
 
   TYPE& front();
 
-  bool empty();
-  bool full();
+  int empty();
+  int full();
 };
 
 template <typename TYPE>
-CircularBuffer<TYPE>::CircularBuffer(size_t size)
+CircularBuffer<TYPE>::CircularBuffer(int size)
     : maxElements(size),
       numElements(0),
       tail(0),
@@ -50,7 +50,7 @@ CircularBuffer<TYPE>::~CircularBuffer()
 }
 
 template <typename TYPE>
-bool CircularBuffer<TYPE>::push_back(const TYPE& element)
+int CircularBuffer<TYPE>::push_back(const TYPE& element)
 {
   if (full())
   {
@@ -66,7 +66,7 @@ bool CircularBuffer<TYPE>::push_back(const TYPE& element)
 }
 
 template <typename TYPE>
-bool CircularBuffer<TYPE>::pop_front()
+int CircularBuffer<TYPE>::pop_front()
 {
   if (empty())
   {
@@ -90,13 +90,13 @@ TYPE& CircularBuffer<TYPE>::front()
 }
 
 template <typename TYPE>
-bool CircularBuffer<TYPE>::empty()
+int CircularBuffer<TYPE>::empty()
 {
   return (!numElements);
 }
 
 template <typename TYPE>
-bool CircularBuffer<TYPE>::full()
+int CircularBuffer<TYPE>::full()
 {
   return (maxElements == numElements);
 }
