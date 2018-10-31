@@ -7,7 +7,7 @@
 #include <libnrf24l01/ispi.hpp>
 #include <libnrf24l01/nrf24.hpp>
 
-using namespace std;
+// using namespace std;
 
 // #define BOUNCE(expression, statement) \
 //   if (expression)                     \
@@ -43,7 +43,7 @@ static inline void _clip(uint8_t& value, uint8_t max)
 
 static inline uint8_t _getPipe(uint8_t status)
 {
-  status and_eq STATUS_RX_P_NO_MASK;
+  status &= STATUS_RX_P_NO_MASK;
   status >>= STATUS_RX_P_NO;
 
   return (status);
@@ -75,22 +75,22 @@ void nRF24::loop()
 {
   uint8_t status = NOP();
 
-  if (_isBitSet(status, STATUS_RX_DR))
+  if (status & STATUS_RX_DR_MASK)
   {
     handleDataReady(status);
-    writeShort(nRF24_Register::STATUS, STATUS_RX_DR);
+    writeShort(nRF24_Register::STATUS, STATUS_RX_DR_MASK);
   }
 
-  if (_isBitSet(status, STATUS_TX_DS))
+  if (status & STATUS_TX_DS_MASK)
   {
     handleDataSent(status);
-    writeShort(nRF24_Register::STATUS, STATUS_TX_DS);
+    writeShort(nRF24_Register::STATUS, STATUS_TX_DS_MASK);
   }
 
-  if (_isBitSet(status, STATUS_MAX_RT))
+  if (status & STATUS_MAX_RT_MASK)
   {
     handleMaxRetransmission(status);
-    writeShort(nRF24_Register::STATUS, STATUS_MAX_RT);
+    writeShort(nRF24_Register::STATUS, STATUS_MAX_RT_MASK);
   }
 
   if (rxBuffer.empty() == false)
@@ -116,9 +116,8 @@ void nRF24::handleDataReady(uint8_t status)
 {
   nRF24_Datagram_t data;
   data.pipe = _getPipe(status);
-  int error = readRxFifo(data);
 
-  if (error)
+  if (readRxFifo(data))
   {
     FLUSH_RX();
   }
