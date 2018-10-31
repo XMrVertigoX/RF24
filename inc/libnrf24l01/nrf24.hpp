@@ -46,9 +46,6 @@ private:
   void handleDataReady(uint8_t status);
   void handleDataSent(uint8_t status);
   void handleMaxRetransmission(uint8_t status);
-
-  int readRxFifo(nRF24_Datagram_t& data);
-  int writeTxFifo(nRF24_Datagram_t& data);
 };
 
 #endif // nRF24_HPP

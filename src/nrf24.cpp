@@ -111,32 +111,6 @@ void nRF24::handleMaxRetransmission(uint8_t status)
   FLUSH_TX();
 }
 
-int nRF24::readRxFifo(nRF24_Datagram_t& data)
-{
-  R_RX_PL_WID(data.numBytes);
-
-  if (data.numBytes > rxFifoSize)
-  {
-    return EXIT_FAILURE;
-  }
-
-  R_RX_PAYLOAD(data.bytes, data.numBytes);
-
-  return EXIT_SUCCESS;
-}
-
-int nRF24::writeTxFifo(nRF24_Datagram_t& data)
-{
-  if (_isBitSet(NOP(), STATUS_TX_FULL))
-  {
-    return EXIT_FAILURE;
-  }
-
-  W_TX_PAYLOAD(data.bytes, data.numBytes);
-
-  return EXIT_SUCCESS;
-}
-
 void nRF24::enterRxMode()
 {
   uint8_t config = readShort(nRF24_Register::CONFIG);

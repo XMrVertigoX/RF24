@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <type_traits>
 
@@ -576,6 +577,41 @@ uint8_t nRF24_LL::readShort(nRF24_Register reg)
 void nRF24_LL::writeShort(nRF24_Register reg, uint8_t val)
 {
   W_REGISTER(reg, &val);
+}
+
+int nRF24_LL::readRxFifo(nRF24_Datagram_t& data)
+{
+  uint8_t fifo_status = readShort(nRF24_Register::FIFO_STATUS);
+
+  if (_isBitSet(fifo_status, FIFO_STATUS_RX_EMPTY))
+  {
+    return EXIT_FAILURE;
+  }
+
+  R_RX_PL_WID(data.numBytes);
+
+  if (data.numBytes > rxFifoSize)
+  {
+    return EXIT_FAILURE;
+  }
+
+  R_RX_PAYLOAD(data.bytes, data.numBytes);
+
+  return EXIT_SUCCESS;
+}
+
+int nRF24_LL::writeTxFifo(nRF24_Datagram_t& data)
+{
+  uint8_t fifo_status = readShort(nRF24_Register::FIFO_STATUS);
+
+  if (_isBitSet(fifo_status, FIFO_STATUS_TX_FULL))
+  {
+    return EXIT_FAILURE;
+  }
+
+  W_TX_PAYLOAD(data.bytes, data.numBytes);
+
+  return EXIT_SUCCESS;
 }
 
 /*

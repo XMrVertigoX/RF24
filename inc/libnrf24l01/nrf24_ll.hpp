@@ -87,6 +87,7 @@ public:
   // TODO: getAddressFieldWidth
   // TODO: setAddressFieldWidth
 
+protected:
   /*
    * ##########################################################################
    * Utility functions
@@ -103,9 +104,26 @@ public:
    */
   void writeShort(nRF24_Register reg, uint8_t val);
 
+  /*
+   * Read data from rx fifo.
+   *
+   * @return EXIT_FAILURE if fifo is empty or data is corrupted; EXIT_SUCCESS otherwise
+   */
+  int readRxFifo(nRF24_Datagram_t& data);
+
+  /*
+   * Write data to tx fifo.
+   *
+   * @return EXIT_FAILURE if fifo is full; EXIT_SUCCESS otherwise
+   */
+  int writeTxFifo(nRF24_Datagram_t& data);
+
 private:
   ISpi& _spi;
 
+  /*
+   * Perform the actual spi transmission.
+   */
   uint8_t transmit(uint8_t command, const uint8_t txBytes[], uint8_t rxBytes[], uint8_t numBytes);
 };
 
