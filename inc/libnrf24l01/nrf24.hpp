@@ -31,6 +31,8 @@ public:
 
   bool enqueueData(nRF24_Datagram_t& data);
 
+  void notify();
+
 private:
   IGpio& _ce;
 
@@ -40,8 +42,9 @@ private:
   nRF24_TxCallback_t txCallback = NULL;
   void* txContext = NULL;
 
-  CircularBuffer<nRF24_Datagram_t> rxBuffer = CircularBuffer<nRF24_Datagram_t>(3);
-  CircularBuffer<nRF24_Datagram_t> txBuffer = CircularBuffer<nRF24_Datagram_t>(3);
+  unsigned int notificationCounter = 0;
+
+  CircularBuffer<nRF24_Datagram_t> rxBuffer = CircularBuffer<nRF24_Datagram_t>(1);
 
   void handleDataReady(uint8_t status);
   void handleDataSent(uint8_t status);

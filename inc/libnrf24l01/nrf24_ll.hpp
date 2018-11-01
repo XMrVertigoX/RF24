@@ -94,35 +94,47 @@ protected:
    * ##########################################################################
    */
 
-  /*
+  /**
    * Read single byte register
    */
   uint8_t readShort(nRF24_Register reg);
 
-  /*
+  /**
    * Write single byte register
    */
   void writeShort(nRF24_Register reg, uint8_t val);
 
-  /*
+  /**
    * Read data from rx fifo.
    *
    * @return EXIT_FAILURE if fifo is empty or data is corrupted; EXIT_SUCCESS otherwise
    */
   int readRxFifo(nRF24_Datagram_t& data);
 
-  /*
+  /**
    * Write data to tx fifo.
    *
    * @return EXIT_FAILURE if fifo is full; EXIT_SUCCESS otherwise
    */
   int writeTxFifo(nRF24_Datagram_t& data);
 
+  /*
+   * Clear all interrupt flags
+   */
+  void clearInterrupts();
+
 private:
   ISpi& _spi;
 
-  /*
+  /**
    * Perform the actual spi transmission.
+   *
+   * @param command The final command (including the register)
+   * @param txBytes TX buffer; NULL if RX only
+   * @param rxBytes RX buffer; NULL if TX only
+   * @param numBytes Length of the buffer(s)
+   *
+   * @return First byte of the rx buffer aka status byte
    */
   uint8_t transmit(uint8_t command, const uint8_t txBytes[], uint8_t rxBytes[], uint8_t numBytes);
 };

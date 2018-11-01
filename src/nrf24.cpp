@@ -1,3 +1,4 @@
+#include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -23,12 +24,7 @@ void nRF24::setup()
   _setBit(feature, FEATURE_EN_DPL);
   writeShort(nRF24_Register::FEATURE, feature);
 
-  // Clear interrupts
-  uint8_t status = readShort(nRF24_Register::STATUS);
-  _setBit(status, STATUS_MAX_RT);
-  _setBit(status, STATUS_RX_DR);
-  _setBit(status, STATUS_TX_DS);
-  writeShort(nRF24_Register::STATUS, status);
+  clearInterrupts();
 
   FLUSH_RX();
   FLUSH_TX();
@@ -36,24 +32,29 @@ void nRF24::setup()
 
 void nRF24::loop()
 {
-  uint8_t status = NOP();
-
-  if (status & STATUS_RX_DR_MASK)
+  if (notificationCounter > 0)
   {
-    handleDataReady(status);
-    writeShort(nRF24_Register::STATUS, STATUS_RX_DR_MASK);
-  }
+    uint8_t status = NOP();
 
-  if (status & STATUS_TX_DS_MASK)
-  {
-    handleDataSent(status);
-    writeShort(nRF24_Register::STATUS, STATUS_TX_DS_MASK);
-  }
+    if (status & STATUS_RX_DR_MASK)
+    {
+      handleDataReady(status);
+      writeShort(nRF24_Register::STATUS, STATUS_RX_DR_MASK);
+    }
 
-  if (status & STATUS_MAX_RT_MASK)
-  {
-    handleMaxRetransmission(status);
-    writeShort(nRF24_Register::STATUS, STATUS_MAX_RT_MASK);
+    if (status & STATUS_TX_DS_MASK)
+    {
+      handleDataSent(status);
+      writeShort(nRF24_Register::STATUS, STATUS_TX_DS_MASK);
+    }
+
+    if (status & STATUS_MAX_RT_MASK)
+    {
+      handleMaxRetransmission(status);
+      writeShort(nRF24_Register::STATUS, STATUS_MAX_RT_MASK);
+    }
+
+    notificationCounter--;
   }
 
   if (rxBuffer.empty() == false)
@@ -65,22 +66,11 @@ void nRF24::loop()
 
     rxBuffer.pop_front();
   }
-
-  if (txBuffer.empty() == false)
-  {
-    if (writeTxFifo(txBuffer.front()) == EXIT_SUCCESS)
-    {
-      txBuffer.pop_front();
-    }
-  }
 }
 
 static inline uint8_t __getPipe(uint8_t status)
 {
-  status &= STATUS_RX_P_NO_MASK;
-  status >>= STATUS_RX_P_NO;
-
-  return (status);
+  return ((status & STATUS_RX_P_NO_MASK) >> STATUS_RX_P_NO);
 }
 
 void nRF24::handleDataReady(uint8_t status)
@@ -169,7 +159,15 @@ void nRF24::stopListening(uint8_t pipe)
 
 bool nRF24::enqueueData(nRF24_Datagram_t& data)
 {
-  return txBuffer.push_back(data);
+  return writeTxFifo(data);
+}
+
+void nRF24::notify()
+{
+  if (notificationCounter < INT_MAX)
+  {
+    notificationCounter++;
+  }
 }
 
 void nRF24::setRxCallback(nRF24_RxCallback_t callback, void* context)

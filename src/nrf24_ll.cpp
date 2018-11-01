@@ -614,6 +614,11 @@ int nRF24_LL::writeTxFifo(nRF24_Datagram_t& data)
   return EXIT_SUCCESS;
 }
 
+void nRF24_LL::clearInterrupts()
+{
+  writeShort(nRF24_Register::STATUS, (STATUS_MAX_RT_MASK | STATUS_RX_DR_MASK | STATUS_TX_DS_MASK));
+}
+
 /*
  * ############################################################################
  * Private
@@ -638,7 +643,7 @@ uint8_t nRF24_LL::transmit(
     memset(&buffer[1], __dummyByte, numBytes);
   }
 
-  _spi.transmit_receive(buffer, buffer, numBytes + 1);
+  _spi.transceive(buffer, buffer, numBytes + 1);
 
   if (rxBytes != NULL)
   {
