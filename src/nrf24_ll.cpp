@@ -310,7 +310,7 @@ nRF24_OutputPower_t nRF24_LL::getOutputPower()
     return (nRF24_OutputPower_t::PWR_6dBm);
     break;
   }
-  case 3:
+  default:
   {
     return (nRF24_OutputPower_t::PWR_0dBm);
     break;
@@ -322,9 +322,6 @@ void nRF24_LL::setOutputPower(nRF24_OutputPower_t outputPower)
 {
   uint8_t rf_setup = readShort(nRF24_Register::RF_SETUP);
 
-  // Default value
-  rf_setup |= RF_SETUP_RF_PWR_MASK;
-
   switch (outputPower)
   {
   case nRF24_OutputPower_t::PWR_18dBm:
@@ -335,17 +332,20 @@ void nRF24_LL::setOutputPower(nRF24_OutputPower_t outputPower)
   break;
   case nRF24_OutputPower_t::PWR_12dBm:
   {
+    _setBit(rf_setup, 1);
     _clearBit(rf_setup, 2);
   }
   break;
   case nRF24_OutputPower_t::PWR_6dBm:
   {
     _clearBit(rf_setup, 1);
+    _setBit(rf_setup, 2);
   }
   break;
   case nRF24_OutputPower_t::PWR_0dBm:
   {
-    // Default value
+    _setBit(rf_setup, 1);
+    _setBit(rf_setup, 2);
   }
   break;
   }
