@@ -173,11 +173,11 @@ void nRF24::notify()
 void nRF24::setRxCallback(nRF24_RxCallback_t callback, void* context)
 {
   rxCallback = callback;
-  rxContext  = context;
+  rxContext = context;
 }
 
 void nRF24::setTxCallback(nRF24_TxCallback_t callback, void* context)
 {
   txCallback = callback;
-  txContext  = context;
+  txContext = context;
 }

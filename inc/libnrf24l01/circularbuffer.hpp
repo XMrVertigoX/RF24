@@ -17,7 +17,7 @@ private:
 
   CircularBuffer(const CircularBuffer& other) = delete;            // Copy constructor
   CircularBuffer& operator=(const CircularBuffer& other) = delete; // Copy assignment operator
-  CircularBuffer(CircularBuffer&& other)                 = delete; // Move constructor
+  CircularBuffer(CircularBuffer&& other) = delete;                 // Move constructor
   CircularBuffer& operator=(CircularBuffer&& other) = delete;      // Move assignment operator
 
 public:

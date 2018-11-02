@@ -9,7 +9,7 @@
 
 using namespace std;
 
-static const uint8_t __DUMMY_BYTE  = 0xFF;
+static const uint8_t __DUMMY_BYTE = 0xFF;
 static const uint8_t __MAX_CHANNEL = 127; // (6:0)
 
 template <typename TYPE>
@@ -30,7 +30,7 @@ nRF24_LL::~nRF24_LL() {}
 uint8_t nRF24_LL::R_REGISTER(nRF24_Register reg, uint8_t bytes[], uint8_t numBytes)
 {
   uint8_t command = asUnderlyingType(nRF24_Command::R_REGISTER) | asUnderlyingType(reg);
-  uint8_t status  = transmit(command, NULL, bytes, numBytes);
+  uint8_t status = transmit(command, NULL, bytes, numBytes);
 
   return (status);
 }
@@ -38,7 +38,7 @@ uint8_t nRF24_LL::R_REGISTER(nRF24_Register reg, uint8_t bytes[], uint8_t numByt
 uint8_t nRF24_LL::W_REGISTER(nRF24_Register reg, const uint8_t bytes[], uint8_t numBytes)
 {
   uint8_t command = asUnderlyingType(nRF24_Command::W_REGISTER) | asUnderlyingType(reg);
-  uint8_t status  = transmit(command, bytes, NULL, numBytes);
+  uint8_t status = transmit(command, bytes, NULL, numBytes);
 
   return (status);
 }
@@ -46,7 +46,7 @@ uint8_t nRF24_LL::W_REGISTER(nRF24_Register reg, const uint8_t bytes[], uint8_t 
 uint8_t nRF24_LL::R_RX_PAYLOAD(uint8_t bytes[], uint8_t numBytes)
 {
   uint8_t command = asUnderlyingType(nRF24_Command::R_RX_PAYLOAD);
-  uint8_t status  = transmit(command, NULL, bytes, numBytes);
+  uint8_t status = transmit(command, NULL, bytes, numBytes);
 
   return (status);
 }
@@ -54,7 +54,7 @@ uint8_t nRF24_LL::R_RX_PAYLOAD(uint8_t bytes[], uint8_t numBytes)
 uint8_t nRF24_LL::W_TX_PAYLOAD(const uint8_t bytes[], uint8_t numBytes)
 {
   uint8_t command = asUnderlyingType(nRF24_Command::W_TX_PAYLOAD);
-  uint8_t status  = transmit(command, bytes, NULL, numBytes);
+  uint8_t status = transmit(command, bytes, NULL, numBytes);
 
   return (status);
 }
@@ -62,7 +62,7 @@ uint8_t nRF24_LL::W_TX_PAYLOAD(const uint8_t bytes[], uint8_t numBytes)
 uint8_t nRF24_LL::FLUSH_TX()
 {
   uint8_t command = asUnderlyingType(nRF24_Command::FLUSH_TX);
-  uint8_t status  = transmit(command, NULL, NULL, 0);
+  uint8_t status = transmit(command, NULL, NULL, 0);
 
   return (status);
 }
@@ -70,7 +70,7 @@ uint8_t nRF24_LL::FLUSH_TX()
 uint8_t nRF24_LL::FLUSH_RX()
 {
   uint8_t command = asUnderlyingType(nRF24_Command::FLUSH_RX);
-  uint8_t status  = transmit(command, NULL, NULL, 0);
+  uint8_t status = transmit(command, NULL, NULL, 0);
 
   return (status);
 }
@@ -78,7 +78,7 @@ uint8_t nRF24_LL::FLUSH_RX()
 uint8_t nRF24_LL::REUSE_TX_PL()
 {
   uint8_t command = asUnderlyingType(nRF24_Command::REUSE_TX_PL);
-  uint8_t status  = transmit(command, NULL, NULL, 0);
+  uint8_t status = transmit(command, NULL, NULL, 0);
 
   return (status);
 }
@@ -86,7 +86,7 @@ uint8_t nRF24_LL::REUSE_TX_PL()
 uint8_t nRF24_LL::R_RX_PL_WID(uint8_t& payloadLength)
 {
   uint8_t command = asUnderlyingType(nRF24_Command::R_RX_PL_WID);
-  uint8_t status  = transmit(command, NULL, &payloadLength, 1);
+  uint8_t status = transmit(command, NULL, &payloadLength, 1);
 
   return (status);
 }
@@ -94,7 +94,7 @@ uint8_t nRF24_LL::R_RX_PL_WID(uint8_t& payloadLength)
 uint8_t nRF24_LL::W_ACK_PAYLOAD(uint8_t pipe, const uint8_t bytes[], uint8_t numBytes)
 {
   uint8_t command = asUnderlyingType(nRF24_Command::W_ACK_PAYLOAD) | pipe;
-  uint8_t status  = transmit(command, bytes, NULL, numBytes);
+  uint8_t status = transmit(command, bytes, NULL, numBytes);
 
   return (status);
 }
@@ -102,7 +102,7 @@ uint8_t nRF24_LL::W_ACK_PAYLOAD(uint8_t pipe, const uint8_t bytes[], uint8_t num
 uint8_t nRF24_LL::W_TX_PAYLOAD_NOACK(const uint8_t bytes[], uint8_t numBytes)
 {
   uint8_t command = asUnderlyingType(nRF24_Command::W_TX_PAYLOAD_NOACK);
-  uint8_t status  = transmit(command, bytes, NULL, numBytes);
+  uint8_t status = transmit(command, bytes, NULL, numBytes);
 
   return (status);
 }
@@ -110,7 +110,7 @@ uint8_t nRF24_LL::W_TX_PAYLOAD_NOACK(const uint8_t bytes[], uint8_t numBytes)
 uint8_t nRF24_LL::NOP()
 {
   uint8_t command = asUnderlyingType(nRF24_Command::NOP);
-  uint8_t status  = transmit(command, NULL, NULL, 0);
+  uint8_t status = transmit(command, NULL, NULL, 0);
 
   return (status);
 }

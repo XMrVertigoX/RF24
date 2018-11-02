@@ -4,7 +4,7 @@
 class IGpio
 {
 public:
-  virtual void clear()                 = 0;
+  virtual void clear() = 0;
   virtual void set(bool enable = true) = 0;
 };
 
