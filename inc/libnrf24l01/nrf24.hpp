@@ -37,10 +37,10 @@ private:
   IGpio& _ce;
 
   nRF24_RxCallback_t rxCallback = NULL;
-  void* rxContext = NULL;
+  void* rxContext               = NULL;
 
   nRF24_TxCallback_t txCallback = NULL;
-  void* txContext = NULL;
+  void* txContext               = NULL;
 
   unsigned int notificationCounter = 0;
 
