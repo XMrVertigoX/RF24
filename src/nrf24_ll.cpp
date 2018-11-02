@@ -9,9 +9,8 @@
 
 using namespace std;
 
-static const uint8_t __dummyByte = 0xFF;
-static const uint8_t __maxChannels = 0b011111111; // 127
-static const uint8_t __addressLength = 5;
+static const uint8_t __DUMMY_BYTE = 0xFF;
+static const uint8_t __MAX_CHANNEL = 127; // (6:0)
 
 template <typename TYPE>
 static constexpr typename underlying_type<TYPE>::type asUnderlyingType(TYPE value)
@@ -203,6 +202,28 @@ void nRF24_LL::setCrcConfig(nRF24_CRCConfig_t crcConfig)
   writeShort(nRF24_Register::CONFIG, config);
 }
 
+uint8_t nRF24_LL::getAddressWidth()
+{
+  uint8_t setup_aw = readShort(nRF24_Register::SETUP_AW);
+
+  setup_aw &= SETUP_AW_MASK;
+  setup_aw += 2;
+
+  return setup_aw;
+}
+
+void nRF24_LL::setAddressWidth(uint8_t addressWidth)
+{
+  if (addressWidth < 3 || addressWidth > 5)
+  {
+    return;
+  }
+
+  addressWidth -= 2;
+
+  writeShort(nRF24_Register::SETUP_AW, addressWidth);
+}
+
 uint8_t nRF24_LL::getChannel()
 {
   return readShort(nRF24_Register::RF_CH);
@@ -210,7 +231,7 @@ uint8_t nRF24_LL::getChannel()
 
 void nRF24_LL::setChannel(uint8_t channel)
 {
-  if (channel > __maxChannels)
+  if (channel > __MAX_CHANNEL)
   {
     return;
   }
@@ -323,14 +344,6 @@ void nRF24_LL::setOutputPower(nRF24_OutputPower_t outputPower)
   writeShort(nRF24_Register::RF_SETUP, rf_setup);
 }
 
-static inline void __clip(uint8_t& value, uint8_t max)
-{
-  if (value > max)
-  {
-    value = max;
-  }
-}
-
 uint8_t nRF24_LL::getRetryCount()
 {
   uint8_t setup_retr = readShort(nRF24_Register::SETUP_RETR);
@@ -342,7 +355,10 @@ uint8_t nRF24_LL::getRetryCount()
 
 void nRF24_LL::setRetryCount(uint8_t count)
 {
-  __clip(count, 0b1111);
+  if (count > 0xF)
+  {
+    return;
+  }
 
   uint8_t setup_retr = readShort(nRF24_Register::SETUP_RETR);
   setup_retr &= ~(SETUP_RETR_ARC_MASK);
@@ -361,7 +377,10 @@ uint8_t nRF24_LL::getRetryDelay()
 
 void nRF24_LL::setRetryDelay(uint8_t delay)
 {
-  __clip(delay, 0b1111);
+  if (delay > 0xF)
+  {
+    return;
+  }
 
   uint8_t setup_retr = readShort(nRF24_Register::SETUP_RETR);
   setup_retr &= ~(SETUP_RETR_ARD_MASK);
@@ -371,71 +390,65 @@ void nRF24_LL::setRetryDelay(uint8_t delay)
 
 uint32_t nRF24_LL::readRxBaseAddress(uint8_t pipe)
 {
-  uint32_t baseAddress;
-  uint8_t baseAddressLength = __addressLength - 1;
-  uint8_t buffer[__addressLength];
+  uint8_t addressWidth = getAddressWidth();
+  uint8_t buffer[addressWidth];
 
   if (pipe == 0)
   {
-    R_REGISTER(nRF24_Register::RX_ADDR_P0, buffer, __addressLength);
+    R_REGISTER(nRF24_Register::RX_ADDR_P0, buffer, addressWidth);
   }
   else
   {
-    R_REGISTER(nRF24_Register::RX_ADDR_P1, buffer, __addressLength);
+    R_REGISTER(nRF24_Register::RX_ADDR_P1, buffer, addressWidth);
   }
 
-  memcpy(&baseAddress, &buffer[1], baseAddressLength);
-
-  return baseAddress;
+  return (reinterpret_cast<uint32_t>(buffer + 1));
 }
 
 void nRF24_LL::writeRxBaseAddress(uint8_t pipe, uint32_t baseAddress)
 {
-  uint8_t baseAddressLength = __addressLength - 1;
-  uint8_t buffer[__addressLength];
+  uint8_t addressWidth = getAddressWidth();
+  uint8_t buffer[addressWidth];
 
   if (pipe == 0)
   {
-    R_REGISTER(nRF24_Register::RX_ADDR_P0, buffer, __addressLength);
+    R_REGISTER(nRF24_Register::RX_ADDR_P0, buffer, addressWidth);
   }
   else
   {
-    R_REGISTER(nRF24_Register::RX_ADDR_P1, buffer, __addressLength);
+    R_REGISTER(nRF24_Register::RX_ADDR_P1, buffer, addressWidth);
   }
 
-  memcpy(&buffer[1], &baseAddress, baseAddressLength);
+  memcpy(buffer + 1, &baseAddress, addressWidth - 1);
 
   if (pipe == 0)
   {
-    W_REGISTER(nRF24_Register::RX_ADDR_P0, buffer, __addressLength);
+    W_REGISTER(nRF24_Register::RX_ADDR_P0, buffer, addressWidth);
   }
   else
   {
-    W_REGISTER(nRF24_Register::RX_ADDR_P1, buffer, __addressLength);
+    W_REGISTER(nRF24_Register::RX_ADDR_P1, buffer, addressWidth);
   }
 }
 
 uint32_t nRF24_LL::readTxBaseAddress()
 {
-  uint32_t baseAddress;
+  uint8_t addressWidth = getAddressWidth();
+  uint8_t buffer[addressWidth];
 
-  uint8_t baseAddressLength = __addressLength - 1;
-  uint8_t addressBuffer[__addressLength];
+  R_REGISTER(nRF24_Register::TX_ADDR, buffer, addressWidth);
 
-  R_REGISTER(nRF24_Register::TX_ADDR, addressBuffer, __addressLength);
-  memcpy(&baseAddress, &addressBuffer[1], baseAddressLength);
-
-  return baseAddress;
+  return (reinterpret_cast<uint32_t>(buffer + 1));
 }
 
 void nRF24_LL::writeTxBaseAddress(uint32_t baseAddress)
 {
-  uint8_t baseAddressLength = __addressLength - 1;
-  uint8_t buffer[__addressLength];
+  uint8_t addressWidth = getAddressWidth();
+  uint8_t buffer[addressWidth];
 
-  R_REGISTER(nRF24_Register::TX_ADDR, buffer, __addressLength);
-  memcpy(&buffer[1], &baseAddress, baseAddressLength);
-  W_REGISTER(nRF24_Register::TX_ADDR, buffer, __addressLength);
+  R_REGISTER(nRF24_Register::TX_ADDR, buffer, addressWidth);
+  memcpy(buffer + 1, &baseAddress, addressWidth - 1);
+  W_REGISTER(nRF24_Register::TX_ADDR, buffer, addressWidth);
 }
 
 uint8_t nRF24_LL::readRxAddress(uint8_t pipe)
@@ -640,7 +653,7 @@ uint8_t nRF24_LL::transmit(
   }
   else
   {
-    memset(&buffer[1], __dummyByte, numBytes);
+    memset(&buffer[1], __DUMMY_BYTE, numBytes);
   }
 
   _spi.transceive(buffer, buffer, numBytes + 1);

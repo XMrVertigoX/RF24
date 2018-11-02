@@ -20,9 +20,9 @@ typedef void (*nRF24_TxCallback_t)(void* context);
 
 enum class nRF24_DataRate_t : uint8_t
 {
-  DR_250KBPS,
-  DR_1MBPS,
-  DR_2MBPS
+  DR_250KBPS = 0,
+  DR_1MBPS = 1,
+  DR_2MBPS = 2
 };
 
 enum class nRF24_CRCConfig_t : uint8_t
