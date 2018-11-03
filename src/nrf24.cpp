@@ -10,10 +10,11 @@
 
 using namespace std;
 
-static inline void __attribute__((weak)) delayUs(int us) {}
-
 nRF24::nRF24(ISpi& spi, IGpio& ce) : nRF24_LL(spi), _ce(ce) {}
+
 nRF24::~nRF24() {}
+
+void __attribute__((weak)) delayUs(int us) {}
 
 void nRF24::setup()
 {

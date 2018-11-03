@@ -114,7 +114,6 @@ public:
   void enableDataPipe(uint8_t pipe, bool enable = true);
   void enableAutoAcknowledgment(uint8_t pipe, bool enable = true);
 
-protected:
   /*
    * ##########################################################################
    * Utility functions

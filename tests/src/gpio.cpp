@@ -1,4 +1,8 @@
-#include <libnrf24l01/gpio.hpp>
+#include <gpio.hpp>
+
+Gpio::Gpio() {}
+
+Gpio::~Gpio() {}
 
 void Gpio::clear()
 {
