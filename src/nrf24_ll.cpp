@@ -411,7 +411,7 @@ uint32_t nRF24_LL::readRxBaseAddress(uint8_t pipe)
     R_REGISTER(nRF24_Register::RX_ADDR_P1, buffer, addressWidth);
   }
 
-  return (reinterpret_cast<uint32_t>(buffer + 1));
+  return (*reinterpret_cast<uint32_t*>(buffer + 1));
 }
 
 void nRF24_LL::writeRxBaseAddress(uint8_t pipe, uint32_t baseAddress)
@@ -447,7 +447,7 @@ uint32_t nRF24_LL::readTxBaseAddress()
 
   R_REGISTER(nRF24_Register::TX_ADDR, buffer, addressWidth);
 
-  return (reinterpret_cast<uint32_t>(buffer + 1));
+  return (*reinterpret_cast<uint32_t*>(buffer + 1));
 }
 
 void nRF24_LL::writeTxBaseAddress(uint32_t baseAddress)
