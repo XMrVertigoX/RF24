@@ -9,6 +9,8 @@ CFLAGS += -std=c17
 
 CXXFLAGS += -std=c++17
 
+LDFLAGS += -fprofile-arcs -ftest-coverage
+
 CPPFLAGS += $(addprefix -I,$(INCLUDE_DIRS)) -MP -MD
 
 # -----
