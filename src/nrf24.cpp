@@ -16,24 +16,17 @@ nRF24::~nRF24() {}
 
 void __attribute__((weak)) delayUs(int us) {}
 
-void nRF24::setup()
+void nRF24::init()
 {
-  // Enable dynamic payload length
-  uint8_t feature = readShort(nRF24_Register::FEATURE);
-  _clearBit(feature, FEATURE_EN_DYN_ACK);
-  _clearBit(feature, FEATURE_EN_ACK_PAY);
-  _setBit(feature, FEATURE_EN_DPL);
-  writeShort(nRF24_Register::FEATURE, feature);
-
   clearInterrupts();
 
   FLUSH_RX();
   FLUSH_TX();
 }
 
-void nRF24::loop()
+void nRF24::process()
 {
-  if (notificationCounter > 0)
+  if (notification)
   {
     uint8_t status = NOP();
 
@@ -55,7 +48,7 @@ void nRF24::loop()
       writeShort(nRF24_Register::STATUS, STATUS_MAX_RT_MASK);
     }
 
-    notificationCounter--;
+    notification = false;
   }
 
   if (rxBuffer.empty() == false)
@@ -165,10 +158,7 @@ bool nRF24::enqueueData(nRF24_Datagram_t& data)
 
 void nRF24::notify()
 {
-  if (notificationCounter < INT_MAX)
-  {
-    notificationCounter++;
-  }
+  notification = true;
 }
 
 void nRF24::setRxCallback(nRF24_RxCallback_t callback, void* context)

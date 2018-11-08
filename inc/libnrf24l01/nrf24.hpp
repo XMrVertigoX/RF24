@@ -1,6 +1,7 @@
 #ifndef nRF24_HPP
 #define nRF24_HPP
 
+#include <atomic>
 #include <cstdint>
 
 #include <libnrf24l01/circularbuffer.hpp>
@@ -9,14 +10,16 @@
 #include <libnrf24l01/nrf24_ll.hpp>
 #include <libnrf24l01/types.hpp>
 
+using namespace std;
+
 class nRF24 : public nRF24_LL
 {
 public:
   nRF24(ISpi& spi, IGpio& ce);
   virtual ~nRF24();
 
-  void setup();
-  void loop();
+  void init();
+  void process();
 
   void enterRxMode();
   void enterShutdownMode();
@@ -42,7 +45,7 @@ private:
   nRF24_TxCallback_t txCallback = NULL;
   void* txContext = NULL;
 
-  unsigned int notificationCounter = 0;
+  atomic_bool notification = false;
 
   CircularBuffer<nRF24_Datagram_t> rxBuffer = CircularBuffer<nRF24_Datagram_t>(1);
 

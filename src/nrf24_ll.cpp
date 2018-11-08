@@ -142,10 +142,17 @@ int nRF24_LL::getRetransmissionCounter()
 void nRF24_LL::enableDynamicPayloadLength(uint8_t pipe, bool enable)
 {
   uint8_t dynpd = readShort(nRF24_Register::DYNPD);
+  uint8_t feature = readShort(nRF24_Register::FEATURE);
 
   if (enable)
   {
     _setBit(dynpd, pipe);
+
+    /*
+     * Requirement. See Product Specification (Rev. 1.0), p63
+     * TODO: Check ENAA_PX
+     */
+    _setBit(feature, FEATURE_EN_DPL);
   }
   else
   {
@@ -153,6 +160,7 @@ void nRF24_LL::enableDynamicPayloadLength(uint8_t pipe, bool enable)
   }
 
   writeShort(nRF24_Register::DYNPD, dynpd);
+  writeShort(nRF24_Register::FEATURE, feature);
 }
 
 nRF24_CRCConfig_t nRF24_LL::getCrcConfig()
