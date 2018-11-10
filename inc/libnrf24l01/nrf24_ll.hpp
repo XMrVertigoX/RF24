@@ -3,8 +3,8 @@
 
 #include <cstdint>
 
+#include <libnrf24l01/definitions.hpp>
 #include <libnrf24l01/ispi.hpp>
-#include <libnrf24l01/types.hpp>
 
 inline void _clearBit(uint8_t& byte, uint8_t bit)
 {
@@ -84,7 +84,7 @@ public:
   /*
    * Set the delay between retries (250µs - 4000µs)
    *
-   * @param delay Delay between retries (0-15), higher values are ignored.
+   * @param delay Delay between retries (0-15, 250µs per step); higher values are ignored.
    */
   void setRetryDelay(uint8_t delay);
   uint8_t getRetryDelay();
@@ -93,6 +93,7 @@ public:
   int getRetransmissionCounter();
 
   void enableDynamicPayloadLength(uint8_t pipe, bool enable = true);
+  void enableDynamicPayloadLengthFeature(bool enable = true);
   void enableDataPipe(uint8_t pipe, bool enable = true);
   void enableAutoAcknowledgment(uint8_t pipe, bool enable = true);
 
@@ -102,16 +103,16 @@ public:
    * ##########################################################################
    */
 
-  uint8_t R_REGISTER(nRF24_Register reg, uint8_t bytes[], uint8_t numBytes = 1);
-  uint8_t W_REGISTER(nRF24_Register reg, const uint8_t bytes[], uint8_t numBytes = 1);
-  uint8_t R_RX_PAYLOAD(uint8_t bytes[], uint8_t numBytes);
-  uint8_t W_TX_PAYLOAD(const uint8_t bytes[], uint8_t numBytes);
+  uint8_t R_REGISTER(nRF24_Register reg, void* bytes, size_t numBytes);
+  uint8_t W_REGISTER(nRF24_Register reg, const void* bytes, size_t numBytes);
+  uint8_t R_RX_PAYLOAD(void* bytes, size_t numBytes);
+  uint8_t W_TX_PAYLOAD(const void* bytes, size_t numBytes);
   uint8_t FLUSH_TX();
   uint8_t FLUSH_RX();
   uint8_t REUSE_TX_PL();
   uint8_t R_RX_PL_WID(uint8_t& payloadLength);
-  uint8_t W_ACK_PAYLOAD(uint8_t pipe, const uint8_t bytes[], uint8_t numBytes);
-  uint8_t W_TX_PAYLOAD_NOACK(const uint8_t bytes[], uint8_t numBytes);
+  uint8_t W_ACK_PAYLOAD(uint8_t pipe, const void* bytes, size_t numBytes);
+  uint8_t W_TX_PAYLOAD_NOACK(const void* bytes, size_t numBytes);
   uint8_t NOP();
 
 protected:
@@ -134,16 +135,16 @@ protected:
   /*
    * Read data from rx fifo.
    *
-   * @return EXIT_FAILURE if fifo is empty or data is corrupted; EXIT_SUCCESS otherwise
+   * @return Number of bytes read; -1 on error
    */
-  int readRxFifo(nRF24_Datagram_t& data);
+  int readRxFifo(void* bytes, size_t numBytes);
 
   /*
    * Write data to tx fifo.
    *
-   * @return EXIT_FAILURE if fifo is full; EXIT_SUCCESS otherwise
+   * @return Number of bytes written; -1 on error
    */
-  int writeTxFifo(nRF24_Datagram_t& data);
+  int writeTxFifo(void* bytes, size_t numBytes);
 
   /*
    * Clear all interrupt flags
@@ -159,11 +160,11 @@ private:
    * @param command The final command (including the register)
    * @param txBytes TX buffer; NULL if RX only
    * @param rxBytes RX buffer; NULL if TX only
-   * @param numBytes Length of the buffer(s)
+   * @param numBytes Length of the buffer(s) in bytes
    *
    * @return First byte of the rx buffer aka status byte
    */
-  uint8_t transmit(uint8_t command, const uint8_t txBytes[], uint8_t rxBytes[], uint8_t numBytes);
+  uint8_t transmit(uint8_t command, const void* txBytes, void* rxBytes, size_t numBytes);
 };
 
 #endif /* nRF24_LL_HPP */

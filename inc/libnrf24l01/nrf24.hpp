@@ -4,11 +4,10 @@
 #include <atomic>
 #include <cstdint>
 
-#include <libnrf24l01/circularbuffer.hpp>
+#include <libnrf24l01/definitions.hpp>
 #include <libnrf24l01/igpio.hpp>
 #include <libnrf24l01/ispi.hpp>
 #include <libnrf24l01/nrf24_ll.hpp>
-#include <libnrf24l01/types.hpp>
 
 using namespace std;
 
@@ -32,7 +31,7 @@ public:
   void startListening(uint8_t pipe = 0);
   void stopListening(uint8_t pipe = 0);
 
-  bool enqueueData(nRF24_Datagram_t& data);
+  int enqueueData(void* bytes, size_t numBytes);
 
   void notify();
 
@@ -46,8 +45,6 @@ private:
   void* txContext = NULL;
 
   atomic_bool notification = false;
-
-  CircularBuffer<nRF24_Datagram_t> rxBuffer = CircularBuffer<nRF24_Datagram_t>(1);
 
   void handleDataReady(uint8_t status);
   void handleDataSent(uint8_t status);

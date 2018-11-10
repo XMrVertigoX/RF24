@@ -5,12 +5,8 @@
 
 #include <libnrf24l01/ispi.hpp>
 #include <libnrf24l01/nrf24_ll.hpp>
-#include <libnrf24l01/types.hpp>
 
 using namespace std;
-
-static const uint8_t __DUMMY_BYTE = 0xFF;
-static const uint8_t __MAX_CHANNEL = 127; // (6:0)
 
 template <typename TYPE>
 static constexpr typename underlying_type<TYPE>::type asUnderlyingType(TYPE value)
@@ -27,7 +23,7 @@ nRF24_LL::~nRF24_LL() {}
  * ############################################################################
  */
 
-uint8_t nRF24_LL::R_REGISTER(nRF24_Register reg, uint8_t bytes[], uint8_t numBytes)
+uint8_t nRF24_LL::R_REGISTER(nRF24_Register reg, void* bytes, size_t numBytes)
 {
   uint8_t command = asUnderlyingType(nRF24_Command::R_REGISTER) | asUnderlyingType(reg);
   uint8_t status = transmit(command, NULL, bytes, numBytes);
@@ -35,7 +31,7 @@ uint8_t nRF24_LL::R_REGISTER(nRF24_Register reg, uint8_t bytes[], uint8_t numByt
   return (status);
 }
 
-uint8_t nRF24_LL::W_REGISTER(nRF24_Register reg, const uint8_t bytes[], uint8_t numBytes)
+uint8_t nRF24_LL::W_REGISTER(nRF24_Register reg, const void* bytes, size_t numBytes)
 {
   uint8_t command = asUnderlyingType(nRF24_Command::W_REGISTER) | asUnderlyingType(reg);
   uint8_t status = transmit(command, bytes, NULL, numBytes);
@@ -43,7 +39,7 @@ uint8_t nRF24_LL::W_REGISTER(nRF24_Register reg, const uint8_t bytes[], uint8_t 
   return (status);
 }
 
-uint8_t nRF24_LL::R_RX_PAYLOAD(uint8_t bytes[], uint8_t numBytes)
+uint8_t nRF24_LL::R_RX_PAYLOAD(void* bytes, size_t numBytes)
 {
   uint8_t command = asUnderlyingType(nRF24_Command::R_RX_PAYLOAD);
   uint8_t status = transmit(command, NULL, bytes, numBytes);
@@ -51,7 +47,7 @@ uint8_t nRF24_LL::R_RX_PAYLOAD(uint8_t bytes[], uint8_t numBytes)
   return (status);
 }
 
-uint8_t nRF24_LL::W_TX_PAYLOAD(const uint8_t bytes[], uint8_t numBytes)
+uint8_t nRF24_LL::W_TX_PAYLOAD(const void* bytes, size_t numBytes)
 {
   uint8_t command = asUnderlyingType(nRF24_Command::W_TX_PAYLOAD);
   uint8_t status = transmit(command, bytes, NULL, numBytes);
@@ -91,7 +87,7 @@ uint8_t nRF24_LL::R_RX_PL_WID(uint8_t& payloadLength)
   return (status);
 }
 
-uint8_t nRF24_LL::W_ACK_PAYLOAD(uint8_t pipe, const uint8_t bytes[], uint8_t numBytes)
+uint8_t nRF24_LL::W_ACK_PAYLOAD(uint8_t pipe, const void* bytes, size_t numBytes)
 {
   uint8_t command = asUnderlyingType(nRF24_Command::W_ACK_PAYLOAD) | pipe;
   uint8_t status = transmit(command, bytes, NULL, numBytes);
@@ -99,7 +95,7 @@ uint8_t nRF24_LL::W_ACK_PAYLOAD(uint8_t pipe, const uint8_t bytes[], uint8_t num
   return (status);
 }
 
-uint8_t nRF24_LL::W_TX_PAYLOAD_NOACK(const uint8_t bytes[], uint8_t numBytes)
+uint8_t nRF24_LL::W_TX_PAYLOAD_NOACK(const void* bytes, size_t numBytes)
 {
   uint8_t command = asUnderlyingType(nRF24_Command::W_TX_PAYLOAD_NOACK);
   uint8_t status = transmit(command, bytes, NULL, numBytes);
@@ -141,18 +137,17 @@ int nRF24_LL::getRetransmissionCounter()
 
 void nRF24_LL::enableDynamicPayloadLength(uint8_t pipe, bool enable)
 {
+  /*
+   * Required. See Product Specification (Rev. 1.0), p63
+   */
+  enableDynamicPayloadLengthFeature();
+  enableAutoAcknowledgment(pipe, enable);
+
   uint8_t dynpd = readShort(nRF24_Register::DYNPD);
-  uint8_t feature = readShort(nRF24_Register::FEATURE);
 
   if (enable)
   {
     _setBit(dynpd, pipe);
-
-    /*
-     * Requirement. See Product Specification (Rev. 1.0), p63
-     * TODO: Check ENAA_PX
-     */
-    _setBit(feature, FEATURE_EN_DPL);
   }
   else
   {
@@ -160,6 +155,21 @@ void nRF24_LL::enableDynamicPayloadLength(uint8_t pipe, bool enable)
   }
 
   writeShort(nRF24_Register::DYNPD, dynpd);
+}
+
+void nRF24_LL::enableDynamicPayloadLengthFeature(bool enable)
+{
+  uint8_t feature = readShort(nRF24_Register::FEATURE);
+
+  if (enable)
+  {
+    _setBit(feature, FEATURE_EN_DPL);
+  }
+  else
+  {
+    _clearBit(feature, FEATURE_EN_DPL);
+  }
+
   writeShort(nRF24_Register::FEATURE, feature);
 }
 
@@ -599,49 +609,40 @@ uint8_t nRF24_LL::readShort(nRF24_Register reg)
 {
   uint8_t tmp;
 
-  R_REGISTER(reg, &tmp);
+  R_REGISTER(reg, &tmp, 1);
 
   return tmp;
 }
 
 void nRF24_LL::writeShort(nRF24_Register reg, uint8_t val)
 {
-  W_REGISTER(reg, &val);
+  W_REGISTER(reg, &val, 1);
 }
 
-int nRF24_LL::readRxFifo(nRF24_Datagram_t& data)
+int nRF24_LL::readRxFifo(void* bytes, size_t maxNumBytes)
 {
-  uint8_t fifo_status = readShort(nRF24_Register::FIFO_STATUS);
+  uint8_t numBytes;
 
-  if (_isBitSet(fifo_status, FIFO_STATUS_RX_EMPTY))
-  {
-    return EXIT_FAILURE;
-  }
+  __BOUNCE(maxNumBytes < __MAX_FIFO_SIZE, -1);
+  __BOUNCE(_isBitSet(readShort(nRF24_Register::FIFO_STATUS), FIFO_STATUS_RX_EMPTY), -1);
 
-  R_RX_PL_WID(data.numBytes);
+  R_RX_PL_WID(numBytes);
 
-  if (data.numBytes > rxFifoSize)
-  {
-    return EXIT_FAILURE;
-  }
+  __BOUNCE(numBytes > __MAX_FIFO_SIZE, -1);
 
-  R_RX_PAYLOAD(data.bytes, data.numBytes);
+  R_RX_PAYLOAD(bytes, numBytes);
 
-  return EXIT_SUCCESS;
+  return numBytes;
 }
 
-int nRF24_LL::writeTxFifo(nRF24_Datagram_t& data)
+int nRF24_LL::writeTxFifo(void* bytes, size_t numBytes)
 {
-  uint8_t fifo_status = readShort(nRF24_Register::FIFO_STATUS);
+  __BOUNCE(numBytes > __MAX_FIFO_SIZE, -1);
+  __BOUNCE(_isBitSet(readShort(nRF24_Register::FIFO_STATUS), FIFO_STATUS_TX_FULL), -1);
 
-  if (_isBitSet(fifo_status, FIFO_STATUS_TX_FULL))
-  {
-    return EXIT_FAILURE;
-  }
+  W_TX_PAYLOAD(bytes, numBytes);
 
-  W_TX_PAYLOAD(data.bytes, data.numBytes);
-
-  return EXIT_SUCCESS;
+  return numBytes;
 }
 
 void nRF24_LL::clearInterrupts()
@@ -657,9 +658,9 @@ void nRF24_LL::clearInterrupts()
 
 uint8_t nRF24_LL::transmit(
     uint8_t command,
-    const uint8_t txBytes[],
-    uint8_t rxBytes[],
-    uint8_t numBytes)
+    const void* txBytes,
+    void* rxBytes,
+    size_t numBytes)
 {
   uint8_t buffer[numBytes + 1];
   buffer[0] = command;
