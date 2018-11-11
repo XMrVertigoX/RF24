@@ -7,6 +7,9 @@
   if (expression)                       \
   return (statement)
 
+namespace libnrf24l01
+{
+
 static const char __DUMMY_BYTE = 0xFF;
 static const int __MAX_CHANNEL = 127; // (6:0)
 static const int __MAX_FIFO_SIZE = 32;
@@ -177,5 +180,7 @@ enum FEATURE
   FEATURE_EN_DPL = 2,
   FEATURE_EN_DPL_MASK = 0b00000100
 };
+
+} // namespace libnrf24l01
 
 #endif // nRF24_DEFINITIONS_HPP

@@ -4,6 +4,9 @@
 #include "igpio.hpp"
 #include "ispi.hpp"
 
+namespace libnrf24l01
+{
+
 class Spi_libopencm3 : public ISpi
 {
 public:
@@ -16,5 +19,7 @@ private:
   uint32_t _spi;
   IGpio& _ss;
 };
+
+} // namespace libnrf24l01
 
 #endif /* __SPI_libopencm3_HPP */

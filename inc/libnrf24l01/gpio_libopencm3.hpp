@@ -5,6 +5,9 @@
 
 #include "igpio.hpp"
 
+namespace libnrf24l01
+{
+
 class Gpio_libopencm3 : public IGpio
 {
 public:
@@ -17,5 +20,7 @@ private:
   uint32_t _gpioport;
   uint16_t _gpios;
 };
+
+} // namespace libnrf24l01
 
 #endif /* __GPIO_libopencm3_HPP */

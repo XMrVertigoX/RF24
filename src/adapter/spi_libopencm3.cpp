@@ -2,6 +2,9 @@
 
 #include "../inc/libnrf24l01/spi_libopencm3.hpp"
 
+namespace libnrf24l01
+{
+
 Spi_libopencm3::Spi_libopencm3(uint32_t spi, IGpio& ss)
     : _spi(spi), _ss(ss)
 {
@@ -27,3 +30,5 @@ uint8_t Spi_libopencm3::transceive(const void* txBytes, void* rxBytes, size_t nu
 
   return 0;
 }
+
+} // namespace libnrf24l01

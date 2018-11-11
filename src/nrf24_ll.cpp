@@ -6,6 +6,9 @@
 #include "../inc/libnrf24l01/ispi.hpp"
 #include "../inc/libnrf24l01/nrf24_ll.hpp"
 
+namespace libnrf24l01
+{
+
 using namespace std;
 
 template <typename TYPE>
@@ -764,3 +767,5 @@ uint8_t nRF24_LL::transmit(
 
   return buffer[0];
 }
+
+} // namespace libnrf24l01

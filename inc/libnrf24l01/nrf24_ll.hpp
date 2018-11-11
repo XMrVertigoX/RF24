@@ -6,6 +6,9 @@
 #include "definitions.hpp"
 #include "ispi.hpp"
 
+namespace libnrf24l01
+{
+
 inline void _clearBit(uint8_t& byte, uint8_t bit)
 {
   byte &= ~((1 << bit));
@@ -183,5 +186,7 @@ private:
    */
   uint8_t transmit(uint8_t command, const void* txBytes, void* rxBytes, size_t numBytes);
 };
+
+} // namespace libnrf24l01
 
 #endif /* nRF24_LL_HPP */
