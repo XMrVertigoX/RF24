@@ -86,8 +86,6 @@ enum class nRF24_OutputPower_t
   PWR_0dBm
 };
 
-// ----------------------------------------------------------------------------
-
 enum CONFIG
 {
   CONFIG_PRIM_RX = 0,

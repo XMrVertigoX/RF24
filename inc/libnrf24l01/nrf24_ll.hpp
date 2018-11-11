@@ -92,10 +92,27 @@ public:
   int getPackageLossCounter();
   int getRetransmissionCounter();
 
+  /*
+   * Set the rx payload width (1-32 bytes)
+   *
+   * @param pipe Pipe index
+   * @param payloadLength The payload width in bytes; 0 disables the pipe.
+   *
+   * @return 0 on success; -1 otherwise.
+   */
+  int setRxPayloadLength(int pipe, int payloadLength = 0);
+  int getRxPayloadLength(int pipe);
+
+  void enableDataPipe(uint8_t pipe, bool enable = true);
+
+  /*
+   * Enable/Disable auto acknowledgment for <pipe>
+   */
+  void setAutoAcknowledgment(uint8_t pipe, bool enable = true);
+  bool getAutoAcknowledgment(uint8_t pipe);
+
   void enableDynamicPayloadLength(uint8_t pipe, bool enable = true);
   void enableDynamicPayloadLengthFeature(bool enable = true);
-  void enableDataPipe(uint8_t pipe, bool enable = true);
-  void enableAutoAcknowledgment(uint8_t pipe, bool enable = true);
 
   /*
    * ##########################################################################

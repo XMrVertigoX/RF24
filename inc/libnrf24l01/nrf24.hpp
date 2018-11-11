@@ -28,9 +28,6 @@ public:
   void setRxCallback(nRF24_RxCallback_t callback, void* context);
   void setTxCallback(nRF24_TxCallback_t callback, void* context);
 
-  void startListening(uint8_t pipe = 0);
-  void stopListening(uint8_t pipe = 0);
-
   int enqueueData(void* bytes, size_t numBytes);
 
   void notify();

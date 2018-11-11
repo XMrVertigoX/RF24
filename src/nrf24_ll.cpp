@@ -137,11 +137,7 @@ int nRF24_LL::getRetransmissionCounter()
 
 void nRF24_LL::enableDynamicPayloadLength(uint8_t pipe, bool enable)
 {
-  /*
-   * Required. See Product Specification (Rev. 1.0), p63
-   */
   enableDynamicPayloadLengthFeature();
-  enableAutoAcknowledgment(pipe, enable);
 
   uint8_t dynpd = readShort(nRF24_Register::DYNPD);
 
@@ -155,6 +151,86 @@ void nRF24_LL::enableDynamicPayloadLength(uint8_t pipe, bool enable)
   }
 
   writeShort(nRF24_Register::DYNPD, dynpd);
+}
+
+int nRF24_LL::setRxPayloadLength(int pipe, int payloadLength)
+{
+  __BOUNCE(payloadLength > __MAX_FIFO_SIZE, -1);
+
+  switch (pipe)
+  {
+  case 0:
+  {
+    writeShort(nRF24_Register::RX_PW_P0, payloadLength);
+    break;
+  }
+  case 1:
+  {
+    writeShort(nRF24_Register::RX_PW_P1, payloadLength);
+    break;
+  }
+  case 2:
+  {
+    writeShort(nRF24_Register::RX_PW_P2, payloadLength);
+    break;
+  }
+  case 3:
+  {
+    writeShort(nRF24_Register::RX_PW_P3, payloadLength);
+    break;
+  }
+  case 4:
+  {
+    writeShort(nRF24_Register::RX_PW_P4, payloadLength);
+    break;
+  }
+  case 5:
+  {
+    writeShort(nRF24_Register::RX_PW_P5, payloadLength);
+    break;
+  }
+  default:
+  {
+    return -1;
+  }
+  }
+
+  return 0;
+}
+
+int nRF24_LL::getRxPayloadLength(int pipe)
+{
+  switch (pipe)
+  {
+  case 0:
+  {
+    return readShort(nRF24_Register::RX_PW_P0);
+  }
+  case 1:
+  {
+    return readShort(nRF24_Register::RX_PW_P1);
+  }
+  case 2:
+  {
+    return readShort(nRF24_Register::RX_PW_P2);
+  }
+  case 3:
+  {
+    return readShort(nRF24_Register::RX_PW_P3);
+  }
+  case 4:
+  {
+    return readShort(nRF24_Register::RX_PW_P4);
+  }
+  case 5:
+  {
+    return readShort(nRF24_Register::RX_PW_P5);
+  }
+  default:
+  {
+    return -1;
+  }
+  }
 }
 
 void nRF24_LL::enableDynamicPayloadLengthFeature(bool enable)
@@ -485,37 +561,30 @@ uint8_t nRF24_LL::readRxAddress(uint8_t pipe)
   case 0:
   {
     return readShort(nRF24_Register::RX_ADDR_P0);
-    break;
   }
   case 1:
   {
     return readShort(nRF24_Register::RX_ADDR_P1);
-    break;
   }
   case 2:
   {
     return readShort(nRF24_Register::RX_ADDR_P2);
-    break;
   }
   case 3:
   {
     return readShort(nRF24_Register::RX_ADDR_P3);
-    break;
   }
   case 4:
   {
     return readShort(nRF24_Register::RX_ADDR_P4);
-    break;
   }
   case 5:
   {
     return readShort(nRF24_Register::RX_ADDR_P5);
-    break;
   }
   default:
   {
     return 0;
-    break;
   }
   }
 }
@@ -567,7 +636,7 @@ void nRF24_LL::writeTxAddress(uint8_t address)
   writeShort(nRF24_Register::TX_ADDR, address);
 }
 
-void nRF24_LL::enableAutoAcknowledgment(uint8_t pipe, bool enable)
+void nRF24_LL::setAutoAcknowledgment(uint8_t pipe, bool enable)
 {
   uint8_t en_aa = readShort(nRF24_Register::EN_AA);
 
@@ -581,6 +650,11 @@ void nRF24_LL::enableAutoAcknowledgment(uint8_t pipe, bool enable)
   }
 
   writeShort(nRF24_Register::EN_AA, en_aa);
+}
+
+bool nRF24_LL::getAutoAcknowledgment(uint8_t pipe)
+{
+  return _isBitSet(readShort(nRF24_Register::EN_AA), pipe);
 }
 
 void nRF24_LL::enableDataPipe(uint8_t pipe, bool enable)
@@ -640,7 +714,14 @@ int nRF24_LL::writeTxFifo(void* bytes, size_t numBytes)
   __BOUNCE(numBytes > __MAX_FIFO_SIZE, -1);
   __BOUNCE(_isBitSet(readShort(nRF24_Register::FIFO_STATUS), FIFO_STATUS_TX_FULL), -1);
 
-  W_TX_PAYLOAD(bytes, numBytes);
+  if (false)
+  {
+    W_TX_PAYLOAD_NOACK(bytes, numBytes);
+  }
+  else
+  {
+    W_TX_PAYLOAD(bytes, numBytes);
+  }
 
   return numBytes;
 }

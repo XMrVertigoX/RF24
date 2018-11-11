@@ -86,23 +86,15 @@ void nRF24::handleMaxRetransmission(uint8_t status)
   writeShort(nRF24_Register::STATUS, STATUS_MAX_RT_MASK);
 }
 
-void nRF24::enterRxMode()
-{
-  uint8_t config = readShort(nRF24_Register::CONFIG);
-  _setBit(config, CONFIG_PWR_UP);
-  _setBit(config, CONFIG_PRIM_RX);
-  writeShort(nRF24_Register::CONFIG, config);
-
-  _ce.set();
-}
-
 void nRF24::enterShutdownMode()
 {
-  _ce.clear();
-
   uint8_t config = readShort(nRF24_Register::CONFIG);
-  _clearBit(config, CONFIG_PWR_UP);
-  writeShort(nRF24_Register::CONFIG, config);
+
+  if (_isBitSet(config, CONFIG_PWR_UP) == true)
+  {
+    _clearBit(config, CONFIG_PWR_UP);
+    writeShort(nRF24_Register::CONFIG, config);
+  }
 }
 
 void nRF24::enterStandbyMode()
@@ -110,30 +102,34 @@ void nRF24::enterStandbyMode()
   _ce.clear();
 
   uint8_t config = readShort(nRF24_Register::CONFIG);
-  _setBit(config, CONFIG_PWR_UP);
-  writeShort(nRF24_Register::CONFIG, config);
+
+  if (_isBitSet(config, CONFIG_PWR_UP) == false)
+  {
+    _setBit(config, CONFIG_PWR_UP);
+    writeShort(nRF24_Register::CONFIG, config);
+  }
 }
 
-void nRF24::enterTxMode()
+void nRF24::enterRxMode()
 {
+  enterStandbyMode();
+
   uint8_t config = readShort(nRF24_Register::CONFIG);
-  _setBit(config, CONFIG_PWR_UP);
-  _clearBit(config, CONFIG_PRIM_RX);
+  _setBit(config, CONFIG_PRIM_RX);
   writeShort(nRF24_Register::CONFIG, config);
 
   _ce.set();
 }
 
-void nRF24::startListening(uint8_t pipe)
+void nRF24::enterTxMode()
 {
-  enableDynamicPayloadLength(pipe);
-  enableDataPipe(pipe);
-}
+  enterStandbyMode();
 
-void nRF24::stopListening(uint8_t pipe)
-{
-  enableDynamicPayloadLength(pipe, false);
-  enableDataPipe(pipe, false);
+  uint8_t config = readShort(nRF24_Register::CONFIG);
+  _clearBit(config, CONFIG_PRIM_RX);
+  writeShort(nRF24_Register::CONFIG, config);
+
+  _ce.set();
 }
 
 int nRF24::enqueueData(void* bytes, size_t numBytes)
