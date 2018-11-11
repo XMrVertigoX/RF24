@@ -99,7 +99,7 @@ void nRF24::enterShutdownMode()
 
 void nRF24::enterStandbyMode()
 {
-  _ce.clear();
+  _ce.set(false);
 
   uint8_t config = readShort(nRF24_Register::CONFIG);
 
