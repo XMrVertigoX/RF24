@@ -1,22 +1,23 @@
-#ifndef nRF24_TYPES_HPP
-#define nRF24_TYPES_HPP
+#ifndef nRF24_DEFINITIONS_HPP
+#define nRF24_DEFINITIONS_HPP
 
 #include <cstdint>
 
-#define txFifoSize 32
-#define rxFifoSize 32
-#define txSettling 130
-#define rxSettling 130
+#define __BOUNCE(expression, statement) \
+  if (expression)                       \
+  return (statement)
 
-struct nRF24_Datagram_t
-{
-  uint8_t bytes[32];
-  uint8_t numBytes;
-  uint8_t pipe;
-};
+static const char __DUMMY_BYTE = 0xFF;
+static const int __MAX_CHANNEL = 127; // (6:0)
+static const int __MAX_FIFO_SIZE = 32;
 
-typedef void (*nRF24_RxCallback_t)(nRF24_Datagram_t data, void* context);
-typedef void (*nRF24_TxCallback_t)(void* context);
+typedef void (*nRF24_RxCallback_t)(
+    uint8_t pipe,
+    const void* bytes,
+    size_t numBytes,
+    void* context);
+typedef void (*nRF24_TxCallback_t)(
+    void* context);
 
 enum class nRF24_Command : uint8_t
 {
@@ -63,29 +64,27 @@ enum class nRF24_Register : uint8_t
   FEATURE = 0x1D
 };
 
-enum class nRF24_DataRate_t : uint8_t
+enum class nRF24_DataRate_t
 {
-  DR_250KBPS = 0,
-  DR_1MBPS = 1,
-  DR_2MBPS = 2
+  DR_250KBPS,
+  DR_1MBPS,
+  DR_2MBPS
 };
 
-enum class nRF24_CRCConfig_t : uint8_t
+enum class nRF24_CRCConfig_t
 {
   CRC_DISABLED,
   CRC_1Byte,
   CRC_2Bytes
 };
 
-enum class nRF24_OutputPower_t : uint8_t
+enum class nRF24_OutputPower_t
 {
   PWR_18dBm,
   PWR_12dBm,
   PWR_6dBm,
   PWR_0dBm
 };
-
-// ----------------------------------------------------------------------------
 
 enum CONFIG
 {
@@ -179,4 +178,4 @@ enum FEATURE
   FEATURE_EN_DPL_MASK = 0b00000100
 };
 
-#endif // nRF24_TYPES_HPP
+#endif // nRF24_DEFINITIONS_HPP
