@@ -10,4 +10,4 @@ clean:
 	@$(RM) $(OBJS) libnrf24l01.a
 
 libnrf24l01.a: $(OBJS)
-	@$(AR) -q $@ $^
+	@$(AR) -cr $@ $^
