@@ -4,10 +4,10 @@
 #include <atomic>
 #include <cstdint>
 
-#include <libnrf24l01/definitions.hpp>
-#include <libnrf24l01/igpio.hpp>
-#include <libnrf24l01/ispi.hpp>
-#include <libnrf24l01/nrf24_ll.hpp>
+#include "definitions.hpp"
+#include "igpio.hpp"
+#include "ispi.hpp"
+#include "nrf24_ll.hpp"
 
 using namespace std;
 

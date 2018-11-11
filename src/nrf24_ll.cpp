@@ -3,8 +3,8 @@
 #include <cstring>
 #include <type_traits>
 
-#include <libnrf24l01/ispi.hpp>
-#include <libnrf24l01/nrf24_ll.hpp>
+#include "../inc/libnrf24l01/ispi.hpp"
+#include "../inc/libnrf24l01/nrf24_ll.hpp"
 
 using namespace std;
 

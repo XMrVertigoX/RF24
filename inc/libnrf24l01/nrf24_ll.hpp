@@ -3,8 +3,8 @@
 
 #include <cstdint>
 
-#include <libnrf24l01/definitions.hpp>
-#include <libnrf24l01/ispi.hpp>
+#include "definitions.hpp"
+#include "ispi.hpp"
 
 inline void _clearBit(uint8_t& byte, uint8_t bit)
 {
