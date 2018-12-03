@@ -9,7 +9,8 @@
 #include "ispi.hpp"
 #include "nrf24_ll.hpp"
 
-using namespace std;
+namespace libnrf24l01
+{
 
 class nRF24 : public nRF24_LL
 {
@@ -41,11 +42,13 @@ private:
   nRF24_TxCallback_t txCallback = NULL;
   void* txContext = NULL;
 
-  atomic_bool notification = false;
+  std::atomic_bool notification = false;
 
   void handleDataReady(uint8_t status);
   void handleDataSent(uint8_t status);
   void handleMaxRetransmission(uint8_t status);
 };
+
+} // namespace libnrf24l01
 
 #endif // nRF24_HPP

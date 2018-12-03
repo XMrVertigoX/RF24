@@ -8,6 +8,9 @@
 #include "../inc/libnrf24l01/ispi.hpp"
 #include "../inc/libnrf24l01/nrf24.hpp"
 
+namespace libnrf24l01
+{
+
 using namespace std;
 
 nRF24::nRF24(ISpi& spi, IGpio& ce) : nRF24_LL(spi), _ce(ce) {}
@@ -99,7 +102,7 @@ void nRF24::enterShutdownMode()
 
 void nRF24::enterStandbyMode()
 {
-  _ce.clear();
+  _ce.set(false);
 
   uint8_t config = readShort(nRF24_Register::CONFIG);
 
@@ -153,3 +156,5 @@ void nRF24::setTxCallback(nRF24_TxCallback_t callback, void* context)
   txCallback = callback;
   txContext = context;
 }
+
+} // namespace libnrf24l01
